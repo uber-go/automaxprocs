@@ -1,11 +1,28 @@
-.DS_Store
-/vendor
-/cover
-cover.out
-lint.log
+# Compiled Object files, Static and Dynamic libs (Shared Objects)
+*.o
+*.a
+*.so
 
-# Binaries
+# Folders
+_obj
+_test
+vendor
+
+# Architecture specific extensions/prefixes
+*.[568vq]
+[568vq].out
+
+*.cgo1.go
+*.cgo2.c
+_cgo_defun.c
+_cgo_gotypes.go
+_cgo_export.*
+
+_testmain.go
+
+*.exe
 *.test
-
-# Profiling output
 *.prof
+*.pprof
+*.out
+*.log
