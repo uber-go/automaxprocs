@@ -5,7 +5,7 @@ package runtime
 import (
 	"math"
 
-	cg "github.com/uber-go/automaxprocs/internal/cgroups"
+	cg "go.uber.org/automaxprocs/internal/cgroups"
 )
 
 // CPUQuotaToGOMAXPROCS converts the CPU quota applied to the calling process
