@@ -6,22 +6,6 @@ Set `GOMAXPROCS` to match container CPU quota.
 
 `go get -u go.uber.org/automaxprocs`
 
-## Quick Start
-
-```go
-import (
-  "log"
-
-  "go.uber.org/automaxprocs"
-)
-
-func main() {
-  undo := automaxprocs.Set(log.Printf)
-  defer undo()
-  // Insert your application logic here.
-}
-```
-
 ## Development Status: Stable
 
 All APIs are finalized, and no breaking changes will be made in the 1.x series
