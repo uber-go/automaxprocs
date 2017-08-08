@@ -20,27 +20,8 @@
 
 package automaxprocs_test
 
-import (
-	"log"
-
-	"go.uber.org/automaxprocs"
-)
+import _ "go.uber.org/automaxprocs"
 
 func Example() {
-	undo, err := automaxprocs.Set()
-	defer undo()
-	if err != nil {
-		log.Fatalf("failed to set GOMAXPROCS: %v", err)
-	}
 	// Insert your application logic here.
-}
-
-func ExampleLogger() {
-	// By default, Set doesn't output any logs. You can enable logging by
-	// supplying a printf implementation.
-	undo, err := automaxprocs.Set(automaxprocs.Logger(log.Printf))
-	defer undo()
-	if err != nil {
-		log.Fatalf("failed to set GOMAXPROCS: %v", err)
-	}
 }

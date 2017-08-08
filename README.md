@@ -1,6 +1,6 @@
 # automaxprocs [![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov]
 
-Set `GOMAXPROCS` to match container CPU quota.
+Automatically set `GOMAXPROCS` to match Linux container CPU quota.
 
 ## Installation
 
@@ -9,19 +9,10 @@ Set `GOMAXPROCS` to match container CPU quota.
 ## Quick Start
 
 ```go
-import (
-  "log"
-
-  "go.uber.org/automaxprocs"
-)
+import _ "go.uber.org/automaxprocs"
 
 func main() {
-  undo, err := automaxprocs.Set()
-  defer undo()
-  if err != nil {
-    log.Fatalf("failed to set GOMAXPROCS: %v", err)
-  }
-  // Insert your application logic here.
+  // Your application logic here.
 }
 ```
 

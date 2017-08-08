@@ -18,86 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-package automaxprocs
+// Package automaxprocs automatically sets `GOMAXPROCS` to match Linux
+// container CPU quota, if any.
+package automaxprocs // import "go.uber.org/automaxprocs"
 
 import (
-	"os"
-	"runtime"
+	"log"
 
-	iruntime "go.uber.org/automaxprocs/internal/runtime"
+	"go.uber.org/automaxprocs/maxprocs"
 )
 
-const _maxProcsKey = "GOMAXPROCS"
-
-func currentMaxProcs() int {
-	return runtime.GOMAXPROCS(0)
-}
-
-type config struct {
-	printf func(string, ...interface{})
-	procs  func(int) (int, iruntime.CPUQuotaStatus, error)
-}
-
-func (c *config) log(fmt string, args ...interface{}) {
-	if c.printf != nil {
-		c.printf(fmt, args...)
-	}
-}
-
-// An Option alters the behavior of Set.
-type Option interface {
-	apply(*config)
-}
-
-// Logger uses the supplied printf implementation for log output. By default,
-// Set doesn't log anything.
-func Logger(printf func(string, ...interface{})) Option {
-	return optionFunc(func(cfg *config) {
-		cfg.printf = printf
-	})
-}
-
-type optionFunc func(*config)
-
-func (of optionFunc) apply(cfg *config) { of(cfg) }
-
-// Set GOMAXPROCS to match the Linux container CPU quota (if any), returning
-// any error encountered and an undo function.
-//
-// Set is a no-op on non-Linux systems and in Linux environments without a
-// configured CPU quota.
-func Set(opts ...Option) (func(), error) {
-	cfg := &config{procs: iruntime.CPUQuotaToGOMAXPROCS}
-	for _, o := range opts {
-		o.apply(cfg)
-	}
-
-	prev := currentMaxProcs()
-	undo := func() {
-		cfg.log("resetting GOMAXPROCS to %d", prev)
-		runtime.GOMAXPROCS(prev)
-	}
-
-	// Honor the GOMAXPROCS environment variable if present. Otherwise, amend
-	// `runtime.GOMAXPROCS()` with the current process' CPU quota if the OS is
-	// Linux, and guarantee a minimum value of 2 to ensure efficiency.
-	if max, exists := os.LookupEnv(_maxProcsKey); exists {
-		cfg.log("GOMAXPROCS=%d: honoring explicitly-configured GOMAXPROCS from environment", max)
-		return undo, nil
-	}
-
-	maxProcs, status, err := cfg.procs(iruntime.MinGOMAXPROCS)
-	switch {
-	case err != nil:
-		return undo, err
-	case status == iruntime.CPUQuotaUndefined:
-		cfg.log("GOMAXPROCS=%d: CPU quota undefined", currentMaxProcs())
-	case status == iruntime.CPUQuotaMinUsed:
-		cfg.log("GOMAXPROCS=%d: using minimum allowed GOMAXPROCS", currentMaxProcs())
-	default:
-		cfg.log("GOMAXPROCS=%d: determined from CPU quota", currentMaxProcs())
-	}
-
-	runtime.GOMAXPROCS(maxProcs)
-	return undo, nil
+func init() {
+	maxprocs.Set(maxprocs.Logger(log.Printf))
 }
