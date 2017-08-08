@@ -24,7 +24,7 @@ endif
 
 .PHONY: test
 test:
-	go test -race ${PKGS}
+	@.build/test.sh
 
 # Disable printf-like invocation checking due to testify.assert.Error()
 VET_RULES := -printf=false
@@ -44,7 +44,7 @@ ifdef SHOULD_LINT
 	@echo "Checking for unresolved FIXMEs..."
 	@git grep -i fixme | grep -v -e vendor -e Makefile -e .md | tee -a lint.log
 	@echo "Checking for license headers..."
-	@DRY_RUN=1 ./check_license.sh | tee -a lint.log
+	@DRY_RUN=1 .build/check_license.sh | tee -a lint.log
 	@[ ! -s lint.log ]
 else
 	@echo "Skipping linters on" $(GO_VERSION)
