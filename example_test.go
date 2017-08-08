@@ -18,6 +18,29 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package automaxprocs lets Go programs easily configure runtime.GOMAXPROCS
-// to match the configured Linux CPU quota.
-package automaxprocs // import "go.uber.org/automaxprocs"
+package automaxprocs_test
+
+import (
+	"log"
+
+	"go.uber.org/automaxprocs"
+)
+
+func Example() {
+	undo, err := automaxprocs.Set()
+	defer undo()
+	if err != nil {
+		log.Fatalf("failed to set GOMAXPROCS: %v", err)
+	}
+	// Insert your application logic here.
+}
+
+func ExampleLogger() {
+	// By default, Set doesn't output any logs. You can enable logging by
+	// supplying a printf implementation.
+	undo, err := automaxprocs.Set(automaxprocs.Logger(log.Printf))
+	defer undo()
+	if err != nil {
+		log.Fatalf("failed to set GOMAXPROCS: %v", err)
+	}
+}
