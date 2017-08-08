@@ -27,7 +27,7 @@ import (
 	"os"
 	"runtime"
 
-	xruntime "github.com/uber-go/automaxprocs/x/runtime"
+	iruntime "go.uber.org/automaxprocs/internal/runtime"
 )
 
 func init() {
@@ -38,13 +38,13 @@ func init() {
 		return
 	}
 
-	maxProcs, status, err := xruntime.CPUQuotaToGOMAXPROCS(xruntime.MinGOMAXPROCS)
+	maxProcs, status, err := iruntime.CPUQuotaToGOMAXPROCS(iruntime.MinGOMAXPROCS)
 	switch {
 	case err != nil:
 		log.Printf("GOMAXPROCS=%d: Error on reading CPU quota: %v", runtime.GOMAXPROCS(0), err)
-	case status == xruntime.CPUQuotaUndefined:
+	case status == iruntime.CPUQuotaUndefined:
 		log.Printf("GOMAXPROCS=%d: CPU quota undefined", runtime.GOMAXPROCS(0))
-	case status == xruntime.CPUQuotaMinUsed:
+	case status == iruntime.CPUQuotaMinUsed:
 		runtime.GOMAXPROCS(maxProcs)
 		log.Printf("GOMAXPROCS=%d: Min value for GOMAXPROCS chosen over lower CPU quota in favor of parallelism", runtime.GOMAXPROCS(0))
 	default:
