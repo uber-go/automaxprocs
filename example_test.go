@@ -18,6 +18,10 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package automaxprocs automatically configures `runtime.GOMAXPROCS()` using
-// the configured CPU quota when running on Linux.
-package automaxprocs // import "go.uber.org/automaxprocs"
+package automaxprocs_test
+
+import _ "go.uber.org/automaxprocs"
+
+func Example() {
+	// Insert your application logic here.
+}

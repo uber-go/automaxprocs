@@ -1,10 +1,20 @@
 # automaxprocs [![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov]
 
-Set `GOMAXPROCS` to match container CPU quota.
+Automatically set `GOMAXPROCS` to match Linux container CPU quota.
 
 ## Installation
 
 `go get -u go.uber.org/automaxprocs`
+
+## Quick Start
+
+```go
+import _ "go.uber.org/automaxprocs"
+
+func main() {
+  // Your application logic here.
+}
+```
 
 ## Development Status: Stable
 
