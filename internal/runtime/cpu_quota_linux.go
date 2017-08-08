@@ -18,6 +18,32 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package cgroups provides utilities to access Linux control group (CGroups)
-// parameters (CPU quota, for example) for a given process.
-package cgroups
+// +build linux
+
+package runtime
+
+import (
+	"math"
+
+	cg "go.uber.org/automaxprocs/internal/cgroups"
+)
+
+// CPUQuotaToGOMAXPROCS converts the CPU quota applied to the calling process
+// to a valid GOMAXPROCS value.
+func CPUQuotaToGOMAXPROCS(minValue int) (int, CPUQuotaStatus, error) {
+	cgroups, err := cg.NewCGroupsForCurrentProcess()
+	if err != nil {
+		return -1, CPUQuotaUndefined, err
+	}
+
+	quota, defined, err := cgroups.CPUQuota()
+	if !defined || err != nil {
+		return -1, CPUQuotaUndefined, err
+	}
+
+	maxProcs := int(math.Ceil(quota))
+	if minValue > 0 && maxProcs < minValue {
+		return minValue, CPUQuotaMinUsed, nil
+	}
+	return maxProcs, CPUQuotaUsed, nil
+}

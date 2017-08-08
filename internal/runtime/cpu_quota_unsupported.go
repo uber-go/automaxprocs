@@ -18,6 +18,13 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package cgroups provides utilities to access Linux control group (CGroups)
-// parameters (CPU quota, for example) for a given process.
-package cgroups
+// +build !linux
+
+package runtime
+
+// CPUQuotaToGOMAXPROCS converts the CPU quota applied to the calling process
+// to a valid GOMAXPROCS value. This is Linux-specific and not supported in the
+// current OS.
+func CPUQuotaToGOMAXPROCS(_ int) (int, CPUQuotaStatus, error) {
+	return -1, CPUQuotaUndefined, nil
+}
