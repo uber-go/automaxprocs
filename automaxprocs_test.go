@@ -49,7 +49,7 @@ func withMax(t testing.TB, n int, f func()) {
 func testLogger() (*bytes.Buffer, Option) {
 	buf := bytes.NewBuffer(nil)
 	printf := func(template string, args ...interface{}) {
-		buf.WriteString(fmt.Sprintf(template, args...))
+		fmt.Fprintf(buf, template, args...)
 	}
 	return buf, Logger(printf)
 }
