@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"testing"
@@ -143,18 +144,8 @@ func TestSet(t *testing.T) {
 }
 
 func TestMain(m *testing.M) {
-	prev, ok := os.LookupEnv(_maxProcsKey)
 	if err := os.Unsetenv(_maxProcsKey); err != nil {
-		fmt.Printf("Couldn't clear %s: %v\n", _maxProcsKey, err)
-		os.Exit(1)
+		log.Fatalf("Couldn't clear %s: %v\n", _maxProcsKey, err)
 	}
-
-	code := m.Run()
-	if ok {
-		if err := os.Setenv(_maxProcsKey, prev); err != nil {
-			fmt.Printf("Couldn't restore %s to %s: %v\n", _maxProcsKey, prev, err)
-			os.Exit(1)
-		}
-	}
-	os.Exit(code)
+	os.Exit(m.Run())
 }
