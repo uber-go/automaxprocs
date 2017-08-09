@@ -24,6 +24,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"log"
 	"os"
 	"strconv"
 	"testing"
@@ -140,4 +141,11 @@ func TestSet(t *testing.T) {
 		require.NoError(t, err, "Set failed")
 		assert.Equal(t, 42, currentMaxProcs(), "should change GOMAXPROCS to match quota")
 	})
+}
+
+func TestMain(m *testing.M) {
+	if err := os.Unsetenv(_maxProcsKey); err != nil {
+		log.Fatalf("Couldn't clear %s: %v\n", _maxProcsKey, err)
+	}
+	os.Exit(m.Run())
 }

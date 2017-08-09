@@ -1,15 +1,11 @@
-hash: 21763d7fd44e410d44acb83a834a2c3e40a2b6ded096b516bf155a3246dc7e56
-updated: 2017-08-07T15:47:07.28565671-07:00
+hash: fb5fac279b3b5a551b2baba2f1e423c3ce8d60b6b2a6d5ed5c03760ffa568993
+updated: 2017-08-09T09:29:17.043339849-07:00
 imports: []
 testImports:
 - name: github.com/davecgh/go-spew
   version: 6d212800a42e8ab5c146b8ace3490ee17e5225f9
   subpackages:
   - spew
-- name: github.com/golang/lint
-  version: c5fb716d6688a859aae56d26d3e6070808df29f7
-  subpackages:
-  - golint
 - name: github.com/pmezard/go-difflib
   version: d8ed2627bdf02c080bf22230dbb337003b7aba2d
   subpackages:
@@ -18,3 +14,4 @@ testImports:
   version: 69483b4bd14f5845b5a1e55bca19e954e827f1d0
   subpackages:
   - assert
+  - require

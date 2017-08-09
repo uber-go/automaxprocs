@@ -17,7 +17,7 @@ dependencies:
 	glide install
 ifdef SHOULD_LINT
 	@echo "Installing golint..."
-	go install ./vendor/github.com/golang/lint/golint
+	go get -u github.com/golang/lint/golint
 else
 	@echo "Not installing golint, since we don't expect to lint on" $(GO_VERSION)
 endif
