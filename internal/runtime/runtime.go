@@ -31,6 +31,3 @@ const (
 	// CPUQuotaMinUsed is return when CPU quota is larger than the min value
 	CPUQuotaMinUsed
 )
-
-// MinGOMAXPROCS defines the minimum value for GOMAXPROCS
-const MinGOMAXPROCS = 2
