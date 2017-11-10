@@ -18,7 +18,7 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// Package automaxprocs automatically sets `GOMAXPROCS` to match Linux
+// Package automaxprocs automatically sets GOMAXPROCS to match the Linux
 // container CPU quota, if any.
 package automaxprocs // import "go.uber.org/automaxprocs"
 
