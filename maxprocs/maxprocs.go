@@ -96,9 +96,9 @@ func Set(opts ...Option) (func(), error) {
 	case status == iruntime.CPUQuotaUndefined:
 		cfg.log("GOMAXPROCS=%d: CPU quota undefined", currentMaxProcs())
 	case status == iruntime.CPUQuotaMinUsed:
-		cfg.log("GOMAXPROCS=%d: using minimum allowed GOMAXPROCS", currentMaxProcs())
+		cfg.log("GOMAXPROCS=%d: using minimum allowed GOMAXPROCS", maxProcs)
 	default:
-		cfg.log("GOMAXPROCS=%d: determined from CPU quota", currentMaxProcs())
+		cfg.log("GOMAXPROCS=%d: determined from CPU quota", maxProcs)
 	}
 
 	runtime.GOMAXPROCS(maxProcs)
