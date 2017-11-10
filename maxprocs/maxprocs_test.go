@@ -145,6 +145,19 @@ func TestSet(t *testing.T) {
 		assert.Contains(t, buf.String(), "using minimum allowed", "unexpected log output")
 	})
 
+	t.Run("Min unused", func(t *testing.T) {
+		buf, logOpt := testLogger()
+		quotaOpt := stubProcs(func(min int) (int, iruntime.CPUQuotaStatus, error) {
+			return min, iruntime.CPUQuotaMinUsed, nil
+		})
+		// Min(-1) should be ignored.
+		undo, err := Set(logOpt, quotaOpt, Min(5), Min(-1))
+		defer undo()
+		require.NoError(t, err, "Set failed")
+		assert.Equal(t, 5, currentMaxProcs(), "should use min allowed GOMAXPROCS")
+		assert.Contains(t, buf.String(), "using minimum allowed", "unexpected log output")
+	})
+
 	t.Run("QuotaUsed", func(t *testing.T) {
 		opt := stubProcs(func(min int) (int, iruntime.CPUQuotaStatus, error) {
 			assert.Equal(t, 1, min, "Default minimum value should be 1")
