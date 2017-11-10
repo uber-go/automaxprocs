@@ -62,6 +62,7 @@ func Logger(printf func(string, ...interface{})) Option {
 }
 
 // Min sets the minimum GOMAXPROCS value that will be used.
+// Any value below 1 is ignored.
 func Min(n int) Option {
 	return optionFunc(func(cfg *config) {
 		if n >= 1 {
