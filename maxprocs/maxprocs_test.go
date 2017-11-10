@@ -120,6 +120,19 @@ func TestSet(t *testing.T) {
 		assert.Contains(t, buf.String(), "quota undefined", "unexpected log output")
 	})
 
+	t.Run("QuotaUndefined return maxProcs=7", func(t *testing.T) {
+		buf, logOpt := testLogger()
+		quotaOpt := stubProcs(func(int) (int, iruntime.CPUQuotaStatus, error) {
+			return 7, iruntime.CPUQuotaUndefined, nil
+		})
+		prev := currentMaxProcs()
+		undo, err := Set(logOpt, quotaOpt)
+		defer undo()
+		require.NoError(t, err, "Set failed")
+		assert.Equal(t, prev, currentMaxProcs(), "shouldn't alter GOMAXPROCS")
+		assert.Contains(t, buf.String(), "quota undefined", "unexpected log output")
+	})
+
 	t.Run("QuotaTooSmall", func(t *testing.T) {
 		buf, logOpt := testLogger()
 		quotaOpt := stubProcs(func(min int) (int, iruntime.CPUQuotaStatus, error) {
