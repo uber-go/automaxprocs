@@ -75,30 +75,39 @@ func Set(opts ...Option) (func(), error) {
 		o.apply(cfg)
 	}
 
-	prev := currentMaxProcs()
 	undo := func() {
-		cfg.log("resetting GOMAXPROCS to %d", prev)
-		runtime.GOMAXPROCS(prev)
+		cfg.log("maxprocs: No GOMAXPROCS change to reset")
 	}
 
 	// Honor the GOMAXPROCS environment variable if present. Otherwise, amend
 	// `runtime.GOMAXPROCS()` with the current process' CPU quota if the OS is
 	// Linux, and guarantee a minimum value of 2 to ensure efficiency.
 	if max, exists := os.LookupEnv(_maxProcsKey); exists {
-		cfg.log("GOMAXPROCS=%d: honoring explicitly-configured GOMAXPROCS from environment", max)
+		cfg.log("maxprocs: Honoring GOMAXPROCS=%d as set in environment", max)
 		return undo, nil
 	}
 
 	maxProcs, status, err := cfg.procs(iruntime.MinGOMAXPROCS)
-	switch {
-	case err != nil:
+	if err != nil {
 		return undo, err
-	case status == iruntime.CPUQuotaUndefined:
-		cfg.log("GOMAXPROCS=%d: CPU quota undefined", currentMaxProcs())
-	case status == iruntime.CPUQuotaMinUsed:
-		cfg.log("GOMAXPROCS=%d: using minimum allowed GOMAXPROCS", maxProcs)
-	default:
-		cfg.log("GOMAXPROCS=%d: determined from CPU quota", maxProcs)
+	}
+
+	if status == iruntime.CPUQuotaUndefined {
+		cfg.log("maxprocs: Leaving GOMAXPROCS=%d: CPU quota undefined", currentMaxProcs())
+		return undo, nil
+	}
+
+	prev := currentMaxProcs()
+	undo = func() {
+		cfg.log("maxprocs: Resetting GOMAXPROCS to %d", prev)
+		runtime.GOMAXPROCS(prev)
+	}
+
+	switch status {
+	case iruntime.CPUQuotaMinUsed:
+		cfg.log("maxprocs: Updating GOMAXPROCS=%d: using minimum allowed GOMAXPROCS", maxProcs)
+	case iruntime.CPUQuotaUsed:
+		cfg.log("maxprocs: Updating GOMAXPROCS=%d: determined from CPU quota", maxProcs)
 	}
 
 	runtime.GOMAXPROCS(maxProcs)
