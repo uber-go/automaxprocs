@@ -20,8 +20,10 @@
 
 package automaxprocs_test
 
+// Importing automaxprocs automatically adjusts GOMAXPROCS.
 import _ "go.uber.org/automaxprocs"
 
-func Example() {
-	// Insert your application logic here.
-}
+// To render a whole-file example, we need a package-level declaration.
+var _ = ""
+
+func Example() {}
