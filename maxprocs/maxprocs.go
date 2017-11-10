@@ -37,8 +37,9 @@ func currentMaxProcs() int {
 }
 
 type config struct {
-	printf func(string, ...interface{})
-	procs  func(int) (int, iruntime.CPUQuotaStatus, error)
+	printf        func(string, ...interface{})
+	procs         func(int) (int, iruntime.CPUQuotaStatus, error)
+	minGOMAXPROCS int
 }
 
 func (c *config) log(fmt string, args ...interface{}) {
@@ -60,6 +61,13 @@ func Logger(printf func(string, ...interface{})) Option {
 	})
 }
 
+// Min sets the minimum GOMAXPROCS value that will be used.
+func Min(n int) Option {
+	return optionFunc(func(cfg *config) {
+		cfg.minGOMAXPROCS = n
+	})
+}
+
 type optionFunc func(*config)
 
 func (of optionFunc) apply(cfg *config) { of(cfg) }
@@ -70,7 +78,10 @@ func (of optionFunc) apply(cfg *config) { of(cfg) }
 // Set is a no-op on non-Linux systems and in Linux environments without a
 // configured CPU quota.
 func Set(opts ...Option) (func(), error) {
-	cfg := &config{procs: iruntime.CPUQuotaToGOMAXPROCS}
+	cfg := &config{
+		procs:         iruntime.CPUQuotaToGOMAXPROCS,
+		minGOMAXPROCS: 1,
+	}
 	for _, o := range opts {
 		o.apply(cfg)
 	}
@@ -87,7 +98,7 @@ func Set(opts ...Option) (func(), error) {
 		return undoNoop, nil
 	}
 
-	maxProcs, status, err := cfg.procs(iruntime.MinGOMAXPROCS)
+	maxProcs, status, err := cfg.procs(cfg.minGOMAXPROCS)
 	if err != nil {
 		return undoNoop, err
 	}
