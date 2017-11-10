@@ -75,7 +75,7 @@ func Set(opts ...Option) (func(), error) {
 		o.apply(cfg)
 	}
 
-	undo := func() {
+	undoNoop := func() {
 		cfg.log("maxprocs: No GOMAXPROCS change to reset")
 	}
 
@@ -84,21 +84,21 @@ func Set(opts ...Option) (func(), error) {
 	// Linux, and guarantee a minimum value of 2 to ensure efficiency.
 	if max, exists := os.LookupEnv(_maxProcsKey); exists {
 		cfg.log("maxprocs: Honoring GOMAXPROCS=%d as set in environment", max)
-		return undo, nil
+		return undoNoop, nil
 	}
 
 	maxProcs, status, err := cfg.procs(iruntime.MinGOMAXPROCS)
 	if err != nil {
-		return undo, err
+		return undoNoop, err
 	}
 
 	if status == iruntime.CPUQuotaUndefined {
 		cfg.log("maxprocs: Leaving GOMAXPROCS=%d: CPU quota undefined", currentMaxProcs())
-		return undo, nil
+		return undoNoop, nil
 	}
 
 	prev := currentMaxProcs()
-	undo = func() {
+	undo := func() {
 		cfg.log("maxprocs: Resetting GOMAXPROCS to %d", prev)
 		runtime.GOMAXPROCS(prev)
 	}
