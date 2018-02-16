@@ -83,7 +83,7 @@ func (c config) undo() {
 // Set is a no-op on non-Linux systems and in Linux environments without a
 // configured CPU quota.
 func Set(opts ...Option) (func(), error) {
-	cfg := &config{
+	cfg := config{
 		log:       noopLog,
 		quotaFunc: iruntime.CPUQuotaToGOMAXPROCS,
 		CPUQuotaConfig: iruntime.CPUQuotaConfig{
@@ -91,7 +91,7 @@ func Set(opts ...Option) (func(), error) {
 		},
 	}
 	for _, o := range opts {
-		o.apply(cfg)
+		o.apply(&cfg)
 	}
 
 	// Honor the GOMAXPROCS environment variable if present. Otherwise, amend
