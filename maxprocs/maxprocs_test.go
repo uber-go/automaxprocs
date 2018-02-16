@@ -97,7 +97,7 @@ func TestSet(t *testing.T) {
 	})
 
 	t.Run("ErrorReadingQuota", func(t *testing.T) {
-		opt := stubQuotaFunc(func(int) (int, iruntime.CPUQuotaStatus, error) {
+		opt := stubQuotaFunc(func(iruntime.CPUQuotaConfig) (int, iruntime.CPUQuotaStatus, error) {
 			return 0, iruntime.CPUQuotaUndefined, errors.New("failed")
 		})
 		prev := runtime.GOMAXPROCS(0)
@@ -110,7 +110,7 @@ func TestSet(t *testing.T) {
 
 	t.Run("QuotaUndefined", func(t *testing.T) {
 		buf, logOpt := testLogger()
-		quotaOpt := stubQuotaFunc(func(int) (int, iruntime.CPUQuotaStatus, error) {
+		quotaOpt := stubQuotaFunc(func(iruntime.CPUQuotaConfig) (int, iruntime.CPUQuotaStatus, error) {
 			return 0, iruntime.CPUQuotaUndefined, nil
 		})
 		prev := runtime.GOMAXPROCS(0)
@@ -123,7 +123,7 @@ func TestSet(t *testing.T) {
 
 	t.Run("QuotaUndefined return maxProcs=7", func(t *testing.T) {
 		buf, logOpt := testLogger()
-		quotaOpt := stubQuotaFunc(func(int) (int, iruntime.CPUQuotaStatus, error) {
+		quotaOpt := stubQuotaFunc(func(iruntime.CPUQuotaConfig) (int, iruntime.CPUQuotaStatus, error) {
 			return 7, iruntime.CPUQuotaUndefined, nil
 		})
 		prev := runtime.GOMAXPROCS(0)
@@ -136,8 +136,8 @@ func TestSet(t *testing.T) {
 
 	t.Run("QuotaTooSmall", func(t *testing.T) {
 		buf, logOpt := testLogger()
-		quotaOpt := stubQuotaFunc(func(min int) (int, iruntime.CPUQuotaStatus, error) {
-			return min, iruntime.CPUQuotaMinUsed, nil
+		quotaOpt := stubQuotaFunc(func(cfg iruntime.CPUQuotaConfig) (int, iruntime.CPUQuotaStatus, error) {
+			return cfg.MinValue, iruntime.CPUQuotaMinUsed, nil
 		})
 		undo, err := Set(logOpt, quotaOpt, Min(5))
 		defer undo()
@@ -148,8 +148,8 @@ func TestSet(t *testing.T) {
 
 	t.Run("Min unused", func(t *testing.T) {
 		buf, logOpt := testLogger()
-		quotaOpt := stubQuotaFunc(func(min int) (int, iruntime.CPUQuotaStatus, error) {
-			return min, iruntime.CPUQuotaMinUsed, nil
+		quotaOpt := stubQuotaFunc(func(cfg iruntime.CPUQuotaConfig) (int, iruntime.CPUQuotaStatus, error) {
+			return cfg.MinValue, iruntime.CPUQuotaMinUsed, nil
 		})
 		// Min(-1) should be ignored.
 		undo, err := Set(logOpt, quotaOpt, Min(5), Min(-1))
@@ -160,8 +160,8 @@ func TestSet(t *testing.T) {
 	})
 
 	t.Run("QuotaUsed", func(t *testing.T) {
-		opt := stubQuotaFunc(func(min int) (int, iruntime.CPUQuotaStatus, error) {
-			assert.Equal(t, 1, min, "Default minimum value should be 1")
+		opt := stubQuotaFunc(func(cfg iruntime.CPUQuotaConfig) (int, iruntime.CPUQuotaStatus, error) {
+			assert.Equal(t, 1, cfg.MinValue, "Default minimum value should be 1")
 			return 42, iruntime.CPUQuotaUsed, nil
 		})
 		undo, err := Set(opt)

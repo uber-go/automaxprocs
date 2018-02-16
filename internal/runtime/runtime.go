@@ -32,9 +32,15 @@ const (
 	CPUQuotaMinUsed
 )
 
+// CPUQuotaConfig specifies configured constraints for automatic GOMAXPROCS
+// configuration.
+type CPUQuotaConfig struct {
+	MinValue int
+}
+
 // CPUQuotaFunc represents a strategy for auto-configuring MAXPROCS based on
 // CPU quota based on configured constraints and environmental data.
-type CPUQuotaFunc func(minValue int) (
+type CPUQuotaFunc func(CPUQuotaConfig) (
 	maxprocs int,
 	status CPUQuotaStatus,
 	err error,
