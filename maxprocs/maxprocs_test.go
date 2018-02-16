@@ -56,9 +56,9 @@ func testLogger() (*bytes.Buffer, Option) {
 	return buf, Logger(printf)
 }
 
-func stubProcs(f func(int) (int, iruntime.CPUQuotaStatus, error)) Option {
+func stubQuotaFunc(f iruntime.CPUQuotaFunc) Option {
 	return optionFunc(func(cfg *config) {
-		cfg.procs = f
+		cfg.quotaFunc = f
 	})
 }
 
@@ -97,7 +97,7 @@ func TestSet(t *testing.T) {
 	})
 
 	t.Run("ErrorReadingQuota", func(t *testing.T) {
-		opt := stubProcs(func(int) (int, iruntime.CPUQuotaStatus, error) {
+		opt := stubQuotaFunc(func(int) (int, iruntime.CPUQuotaStatus, error) {
 			return 0, iruntime.CPUQuotaUndefined, errors.New("failed")
 		})
 		prev := runtime.GOMAXPROCS(0)
@@ -110,7 +110,7 @@ func TestSet(t *testing.T) {
 
 	t.Run("QuotaUndefined", func(t *testing.T) {
 		buf, logOpt := testLogger()
-		quotaOpt := stubProcs(func(int) (int, iruntime.CPUQuotaStatus, error) {
+		quotaOpt := stubQuotaFunc(func(int) (int, iruntime.CPUQuotaStatus, error) {
 			return 0, iruntime.CPUQuotaUndefined, nil
 		})
 		prev := runtime.GOMAXPROCS(0)
@@ -123,7 +123,7 @@ func TestSet(t *testing.T) {
 
 	t.Run("QuotaUndefined return maxProcs=7", func(t *testing.T) {
 		buf, logOpt := testLogger()
-		quotaOpt := stubProcs(func(int) (int, iruntime.CPUQuotaStatus, error) {
+		quotaOpt := stubQuotaFunc(func(int) (int, iruntime.CPUQuotaStatus, error) {
 			return 7, iruntime.CPUQuotaUndefined, nil
 		})
 		prev := runtime.GOMAXPROCS(0)
@@ -136,7 +136,7 @@ func TestSet(t *testing.T) {
 
 	t.Run("QuotaTooSmall", func(t *testing.T) {
 		buf, logOpt := testLogger()
-		quotaOpt := stubProcs(func(min int) (int, iruntime.CPUQuotaStatus, error) {
+		quotaOpt := stubQuotaFunc(func(min int) (int, iruntime.CPUQuotaStatus, error) {
 			return min, iruntime.CPUQuotaMinUsed, nil
 		})
 		undo, err := Set(logOpt, quotaOpt, Min(5))
@@ -148,7 +148,7 @@ func TestSet(t *testing.T) {
 
 	t.Run("Min unused", func(t *testing.T) {
 		buf, logOpt := testLogger()
-		quotaOpt := stubProcs(func(min int) (int, iruntime.CPUQuotaStatus, error) {
+		quotaOpt := stubQuotaFunc(func(min int) (int, iruntime.CPUQuotaStatus, error) {
 			return min, iruntime.CPUQuotaMinUsed, nil
 		})
 		// Min(-1) should be ignored.
@@ -160,7 +160,7 @@ func TestSet(t *testing.T) {
 	})
 
 	t.Run("QuotaUsed", func(t *testing.T) {
-		opt := stubProcs(func(min int) (int, iruntime.CPUQuotaStatus, error) {
+		opt := stubQuotaFunc(func(min int) (int, iruntime.CPUQuotaStatus, error) {
 			assert.Equal(t, 1, min, "Default minimum value should be 1")
 			return 42, iruntime.CPUQuotaUsed, nil
 		})

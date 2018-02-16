@@ -31,3 +31,11 @@ const (
 	// CPUQuotaMinUsed is return when CPU quota is larger than the min value
 	CPUQuotaMinUsed
 )
+
+// CPUQuotaFunc represents a strategy for auto-configuring MAXPROCS based on
+// CPU quota based on configured constraints and environmental data.
+type CPUQuotaFunc func(minValue int) (
+	maxprocs int,
+	status CPUQuotaStatus,
+	err error,
+)

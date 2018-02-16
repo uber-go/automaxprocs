@@ -36,7 +36,7 @@ func noopLog(fmt string, args ...interface{}) {}
 
 type config struct {
 	log           func(string, ...interface{})
-	procs         func(int) (int, iruntime.CPUQuotaStatus, error)
+	quotaFunc     iruntime.CPUQuotaFunc
 	minGOMAXPROCS int
 }
 
@@ -75,7 +75,7 @@ func (of optionFunc) apply(cfg *config) { of(cfg) }
 func Set(opts ...Option) (func(), error) {
 	cfg := &config{
 		log:           noopLog,
-		procs:         iruntime.CPUQuotaToGOMAXPROCS,
+		quotaFunc:     iruntime.CPUQuotaToGOMAXPROCS,
 		minGOMAXPROCS: 1,
 	}
 	for _, o := range opts {
@@ -94,7 +94,7 @@ func Set(opts ...Option) (func(), error) {
 		return undoNoop, nil
 	}
 
-	maxProcs, status, err := cfg.procs(cfg.minGOMAXPROCS)
+	maxProcs, status, err := cfg.quotaFunc(cfg.minGOMAXPROCS)
 	if err != nil {
 		return undoNoop, err
 	}
