@@ -32,10 +32,6 @@ import (
 
 const _maxProcsKey = "GOMAXPROCS"
 
-func currentMaxProcs() int {
-	return runtime.GOMAXPROCS(0)
-}
-
 type config struct {
 	printf        func(string, ...interface{})
 	procs         func(int) (int, iruntime.CPUQuotaStatus, error)
@@ -106,7 +102,7 @@ func Set(opts ...Option) (func(), error) {
 		return undoNoop, err
 	}
 
-	prev := currentMaxProcs()
+	prev := runtime.GOMAXPROCS(0)
 
 	if status == iruntime.CPUQuotaUndefined {
 		cfg.log("maxprocs: Leaving GOMAXPROCS=%d: CPU quota undefined", prev)
