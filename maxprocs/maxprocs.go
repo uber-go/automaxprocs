@@ -38,6 +38,7 @@ type config struct {
 	iruntime.CPUQuotaConfig
 	log       func(string, ...interface{})
 	quotaFunc iruntime.CPUQuotaFunc
+	origValue int
 }
 
 // An Option alters the behavior of Set.
@@ -67,6 +68,15 @@ type optionFunc func(*config)
 
 func (of optionFunc) apply(cfg *config) { of(cfg) }
 
+func (c config) undoNoop() {
+	c.log("maxprocs: No GOMAXPROCS change to reset")
+}
+
+func (c config) undo() {
+	c.log("maxprocs: Resetting GOMAXPROCS to %d", c.origValue)
+	runtime.GOMAXPROCS(c.origValue)
+}
+
 // Set GOMAXPROCS to match the Linux container CPU quota (if any), returning
 // any error encountered and an undo function.
 //
@@ -84,33 +94,24 @@ func Set(opts ...Option) (func(), error) {
 		o.apply(cfg)
 	}
 
-	undoNoop := func() {
-		cfg.log("maxprocs: No GOMAXPROCS change to reset")
-	}
-
 	// Honor the GOMAXPROCS environment variable if present. Otherwise, amend
 	// `runtime.GOMAXPROCS()` with the current process' CPU quota if the OS is
 	// Linux, and guarantee a minimum value of 2 to ensure efficiency.
 	if max, exists := os.LookupEnv(_maxProcsKey); exists {
 		cfg.log("maxprocs: Honoring GOMAXPROCS=%d as set in environment", max)
-		return undoNoop, nil
+		return cfg.undoNoop, nil
 	}
 
 	maxProcs, status, err := cfg.quotaFunc(cfg.CPUQuotaConfig)
 	if err != nil {
-		return undoNoop, err
+		return cfg.undoNoop, err
 	}
 
-	prev := runtime.GOMAXPROCS(0)
+	cfg.origValue = runtime.GOMAXPROCS(0)
 
 	if status == iruntime.CPUQuotaUndefined {
-		cfg.log("maxprocs: Leaving GOMAXPROCS=%d: CPU quota undefined", prev)
-		return undoNoop, nil
-	}
-
-	undo := func() {
-		cfg.log("maxprocs: Resetting GOMAXPROCS to %d", prev)
-		runtime.GOMAXPROCS(prev)
+		cfg.log("maxprocs: Leaving GOMAXPROCS=%d: CPU quota undefined", cfg.origValue)
+		return cfg.undoNoop, nil
 	}
 
 	switch status {
@@ -121,5 +122,5 @@ func Set(opts ...Option) (func(), error) {
 	}
 
 	runtime.GOMAXPROCS(maxProcs)
-	return undo, nil
+	return cfg.undo, nil
 }
