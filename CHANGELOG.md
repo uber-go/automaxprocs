@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.2.0 (unreleased)
+
+- Fixed quota clamping to always round down rather than up; Rather than
+  guaranteeing constant throttling at saturation, instead assume that the
+  fractional CPU was added as a hedge for factors outside of Go's scheduler.
+
 ## v1.1.0 (2017-11-10)
 
 - Log the new value of `GOMAXPROCS` rather than the current value.
