@@ -106,12 +106,13 @@ func Set(opts ...Option) (func(), error) {
 		return undoNoop, err
 	}
 
+	prev := currentMaxProcs()
+
 	if status == iruntime.CPUQuotaUndefined {
-		cfg.log("maxprocs: Leaving GOMAXPROCS=%d: CPU quota undefined", currentMaxProcs())
+		cfg.log("maxprocs: Leaving GOMAXPROCS=%d: CPU quota undefined", prev)
 		return undoNoop, nil
 	}
 
-	prev := currentMaxProcs()
 	undo := func() {
 		cfg.log("maxprocs: Resetting GOMAXPROCS to %d", prev)
 		runtime.GOMAXPROCS(prev)
