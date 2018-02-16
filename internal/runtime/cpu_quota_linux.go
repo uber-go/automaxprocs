@@ -41,9 +41,14 @@ func CPUQuotaToGOMAXPROCS(cfg CPUQuotaConfig) (int, CPUQuotaStatus, error) {
 		return -1, CPUQuotaUndefined, err
 	}
 
+	if cfg.Reserved > 0 {
+		quota -= cfg.Reserved
+	}
+
 	maxProcs := int(math.Ceil(quota))
 	if cfg.MinValue > 0 && maxProcs < cfg.MinValue {
 		return cfg.MinValue, CPUQuotaMinUsed, nil
 	}
+
 	return maxProcs, CPUQuotaUsed, nil
 }

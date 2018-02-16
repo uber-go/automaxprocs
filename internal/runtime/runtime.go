@@ -36,6 +36,7 @@ const (
 // configuration.
 type CPUQuotaConfig struct {
 	MinValue int
+	Reserved float64
 }
 
 // CPUQuotaFunc represents a strategy for auto-configuring MAXPROCS based on

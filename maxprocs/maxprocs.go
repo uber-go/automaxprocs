@@ -64,6 +64,22 @@ func Min(n int) Option {
 	})
 }
 
+// ReservedCPUQuota specifies a CPU quota amount to consider reserved for use
+// outside of the Go runtime; e.g. by a cgo extension, or another process
+// within the container.
+//
+// GOMAXPROCS will be set to the remaining (rounded down) quota, clamped to the
+// minimum limit (default 1).
+//
+// Any non-positive value is ignored.
+func ReservedCPUQuota(reserved float64) Option {
+	return optionFunc(func(cfg *config) {
+		if reserved >= 0 {
+			cfg.Reserved = reserved
+		}
+	})
+}
+
 type optionFunc func(*config)
 
 func (of optionFunc) apply(cfg *config) { of(cfg) }

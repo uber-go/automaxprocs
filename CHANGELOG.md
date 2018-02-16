@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.2.0 (unreleased)
+
+- Add a `Reserved(quota float64)` option to allow users to reserve part of
+  their CPU quota things outside the Go runtime.
+
 ## v1.1.0 (2017-11-10)
 
 - Log the new value of `GOMAXPROCS` rather than the current value.
