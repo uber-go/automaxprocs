@@ -32,16 +32,12 @@ import (
 
 const _maxProcsKey = "GOMAXPROCS"
 
+func noopLog(fmt string, args ...interface{}) {}
+
 type config struct {
-	printf        func(string, ...interface{})
+	log           func(string, ...interface{})
 	procs         func(int) (int, iruntime.CPUQuotaStatus, error)
 	minGOMAXPROCS int
-}
-
-func (c *config) log(fmt string, args ...interface{}) {
-	if c.printf != nil {
-		c.printf(fmt, args...)
-	}
 }
 
 // An Option alters the behavior of Set.
@@ -53,7 +49,7 @@ type Option interface {
 // Set doesn't log anything.
 func Logger(printf func(string, ...interface{})) Option {
 	return optionFunc(func(cfg *config) {
-		cfg.printf = printf
+		cfg.log = printf
 	})
 }
 
@@ -78,6 +74,7 @@ func (of optionFunc) apply(cfg *config) { of(cfg) }
 // configured CPU quota.
 func Set(opts ...Option) (func(), error) {
 	cfg := &config{
+		log:           noopLog,
 		procs:         iruntime.CPUQuotaToGOMAXPROCS,
 		minGOMAXPROCS: 1,
 	}
