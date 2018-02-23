@@ -1,6 +1,6 @@
 # Changelog
 
-## v1.2.0 (unreleased)
+## v1.2.0 (2018-02-22)
 
 - Fixed quota clamping to always round down rather than up; Rather than
   guaranteeing constant throttling at saturation, instead assume that the
