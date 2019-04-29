@@ -38,8 +38,8 @@ Released under the [MIT License](LICENSE).
 
 [doc-img]: https://godoc.org/go.uber.org/automaxprocs?status.svg
 [doc]: https://godoc.org/go.uber.org/automaxprocs
-[ci-img]: https://travis-ci.org/uber-go/automaxprocs.svg?branch=master
-[ci]: https://travis-ci.org/uber-go/automaxprocs
+[ci-img]: https://travis-ci.com/uber-go/automaxprocs.svg?branch=master
+[ci]: https://travis-ci.com/uber-go/automaxprocs
 [cov-img]: https://codecov.io/gh/uber-go/automaxprocs/branch/master/graph/badge.svg
 [cov]: https://codecov.io/gh/uber-go/automaxprocs
 
