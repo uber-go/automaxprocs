@@ -5,7 +5,7 @@ PKG_FILES ?= *.go
 # stable release.
 GO_VERSION := $(shell go version | cut -d " " -f 3)
 GO_MINOR_VERSION := $(word 2,$(subst ., ,$(GO_VERSION)))
-LINTABLE_MINOR_VERSIONS := 8
+LINTABLE_MINOR_VERSIONS := 12
 ifneq ($(filter $(LINTABLE_MINOR_VERSIONS),$(GO_MINOR_VERSION)),)
 SHOULD_LINT := true
 endif
@@ -17,7 +17,7 @@ dependencies:
 	glide install
 ifdef SHOULD_LINT
 	@echo "Installing golint..."
-	go get -u github.com/golang/lint/golint
+	go get -u golang.org/x/lint/golint
 else
 	@echo "Not installing golint, since we don't expect to lint on" $(GO_VERSION)
 endif
@@ -38,7 +38,7 @@ ifdef SHOULD_LINT
 	@echo "Installing test dependencies..."
 	@go test -i $(PKGS)
 	@echo "Checking vet..."
-	@$(foreach dir,$(PKG_FILES),go tool vet $(VET_RULES) $(dir) 2>&1 | tee -a lint.log;)
+	@go vet ./... 2>&1 | tee -a lint.log
 	@echo "Checking lint..."
 	@$(foreach dir,$(PKGS),golint $(dir) 2>&1 | tee -a lint.log;)
 	@echo "Checking for unresolved FIXMEs..."
