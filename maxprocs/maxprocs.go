@@ -97,7 +97,7 @@ func Set(opts ...Option) (func(), error) {
 	// `runtime.GOMAXPROCS()` with the current process' CPU quota if the OS is
 	// Linux, and guarantee a minimum value of 2 to ensure efficiency.
 	if max, exists := os.LookupEnv(_maxProcsKey); exists {
-		cfg.log("maxprocs: Honoring GOMAXPROCS=%v as set in environment", max)
+		cfg.log("maxprocs: Honoring GOMAXPROCS=%q as set in environment", max)
 		return undoNoop, nil
 	}
 
