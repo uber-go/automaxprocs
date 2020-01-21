@@ -27,3 +27,7 @@ _testmain.go
 *.out
 *.log
 coverage.txt
+
+/bin
+cover.out
+cover.html
