@@ -5,6 +5,7 @@ GO_FILES := $(shell \
 	-o -name '*.go' -print | cut -b3-)
 
 GOLINT = $(GOBIN)/golint
+STATICCHECK = $(GOBIN)/staticcheck
 
 .PHONY: build
 build:
@@ -26,15 +27,20 @@ cover:
 $(GOLINT):
 	go install golang.org/x/lint/golint
 
+$(STATICCHECK):
+	go install honnef.co/go/tools/cmd/staticcheck
+
 .PHONY: lint
-lint: $(GOLINT)
+lint: $(GOLINT) $(STATICCHECK)
 	@rm -rf lint.log
-	@echo "Checking formatting..."
+	@echo "Checking gofmt"
 	@gofmt -d -s $(GO_FILES) 2>&1 | tee lint.log
-	@echo "Checking vet..."
+	@echo "Checking go vet"
 	@go vet ./... 2>&1 | tee -a lint.log
-	@echo "Checking lint..."
+	@echo "Checking golint"
 	@$(GOLINT) ./... | tee -a lint.log
+	@echo "Checking staticcheck"
+	@$(STATICCHECK) ./... 2>&1 |  tee -a lint.log
 	@echo "Checking for license headers..."
 	@./.build/check_license.sh | tee -a lint.log
 	@[ ! -s lint.log ]
