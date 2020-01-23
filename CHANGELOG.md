@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.3.0 (2020-01-23)
+
+- Migrate to Go modules.
+
 ## v1.2.0 (2018-02-22)
 
 - Fixed quota clamping to always round down rather than up; Rather than
