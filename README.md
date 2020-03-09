@@ -1,19 +1,35 @@
 # automaxprocs [![GoDoc][doc-img]][doc] [![Build Status][ci-img]][ci] [![Coverage Status][cov-img]][cov]
 
-Automatically set `GOMAXPROCS` to match Linux container CPU quota.
+# automaxprocs
 
-## Installation
-
-`go get -u go.uber.org/automaxprocs`
+Importing the base package will automatically set `GOMAXPROCS` to match Linux container
+CPU quota.
 
 ## Quick Start
 
+To automatically set `GOMAXPROCS`:
 ```go
 import _ "go.uber.org/automaxprocs"
 
 func main() {
   // Your application logic here.
 }
+```
+
+To get the current CPU quota
+```go
+import "go.uber.org/automaxprocs/cpuquota"
+
+allCGroups, err := cpuquota.NewCGroupsForCurrentProcess()
+if err != nil {
+	// handle err
+}
+quota, defined, err := allCGroups.CPUQuota()
+if !defined || err != nil {
+	// handle err
+}
+
+fmt.Println("quota:", quota)
 ```
 
 ## Development Status: Stable
@@ -42,5 +58,3 @@ Released under the [MIT License](LICENSE).
 [ci]: https://travis-ci.com/uber-go/automaxprocs
 [cov-img]: https://codecov.io/gh/uber-go/automaxprocs/branch/master/graph/badge.svg
 [cov]: https://codecov.io/gh/uber-go/automaxprocs
-
-
