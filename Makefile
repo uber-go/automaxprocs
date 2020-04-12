@@ -32,6 +32,9 @@ $(STATICCHECK):
 
 .PHONY: lint
 lint: $(GOLINT) $(STATICCHECK)
+    # avoid `go vet` output going to lint.log on fresh clone
+	@go build ./...
+	@go test ./...
 	@rm -rf lint.log
 	@echo "Checking gofmt"
 	@gofmt -d -s $(GO_FILES) 2>&1 | tee lint.log
