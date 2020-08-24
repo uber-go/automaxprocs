@@ -41,6 +41,9 @@ const (
 	// _cgroupCPUCFSPeriodUsParam is the file name for the CGroup CFS period
 	// parameter.
 	_cgroupCPUCFSPeriodUsParam = "cpu.cfs_period_us"
+	// _cgroupMemoryLimitBytes is the file name for CGroup total memory parameter.
+	_cgroupMemoryLimitBytes = "memory.limit_in_bytes"
+
 )
 
 const (
@@ -114,4 +117,18 @@ func (cg CGroups) CPUQuota() (float64, bool, error) {
 	}
 
 	return float64(cfsQuotaUs) / float64(cfsPeriodUs), true, nil
+}
+
+// TotalMemoryQuota returns total memory quota from `memory.limit_in_bytes`.
+func (cg CGroups) TotalMemoryQuota() (int64, bool, error) {
+	cpuCGroup, exists := cg[_cgroupSubsysMemory]
+	if !exists {
+		return -1, false, nil
+	}
+
+	memLimitBytes, err := cpuCGroup.readInt(_cgroupMemoryLimitBytes)
+	if defined := memLimitBytes > 0; err != nil || !defined {
+		return -1, defined, err
+	}
+	return int64(memLimitBytes), true, nil
 }

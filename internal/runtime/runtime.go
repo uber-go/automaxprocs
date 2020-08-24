@@ -23,6 +23,9 @@ package runtime
 // CPUQuotaStatus presents the status of how CPU quota is used
 type CPUQuotaStatus int
 
+// TotalMemory presents the status of how total memory quota is used
+type TotalMemoryStatus int
+
 const (
 	// CPUQuotaUndefined is returned when CPU quota is undefined
 	CPUQuotaUndefined CPUQuotaStatus = iota
@@ -30,4 +33,9 @@ const (
 	CPUQuotaUsed
 	// CPUQuotaMinUsed is return when CPU quota is smaller than the min value
 	CPUQuotaMinUsed
+
+	// TotalMemoryUndefined is returned when total memory is undefined
+	TotalMemoryUndefined TotalMemoryStatus = iota
+	// TotalMemoryUsed is returned when a valid total memory quota can be used
+	TotalMemoryUsed
 )

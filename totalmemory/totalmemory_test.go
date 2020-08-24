@@ -18,47 +18,16 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// +build linux
-
-package runtime
+package totalmemory
 
 import (
-	"math"
-
-	cg "go.uber.org/automaxprocs/internal/cgroups"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"testing"
 )
 
-// CPUQuotaToGOMAXPROCS converts the CPU quota applied to the calling process
-// to a valid GOMAXPROCS value.
-func CPUQuotaToGOMAXPROCS(minValue int) (int, CPUQuotaStatus, error) {
-	cgroups, err := cg.NewCGroupsForCurrentProcess()
-	if err != nil {
-		return -1, CPUQuotaUndefined, err
-	}
-
-	quota, defined, err := cgroups.CPUQuota()
-	if !defined || err != nil {
-		return -1, CPUQuotaUndefined, err
-	}
-
-	maxProcs := int(math.Floor(quota))
-	if minValue > 0 && maxProcs < minValue {
-		return minValue, CPUQuotaMinUsed, nil
-	}
-	return maxProcs, CPUQuotaUsed, nil
-}
-
-// TotalMemory returns total available memory.
-func TotalMemory() (int64, TotalMemoryStatus, error) {
-	cgroups, err := cg.NewCGroupsForCurrentProcess()
-	if err != nil {
-		return -1, TotalMemoryUndefined, err
-	}
-
-	quota, defined, err := cgroups.TotalMemoryQuota()
-	if !defined || err != nil {
-		return -1, TotalMemoryUndefined, err
-	}
-
-	return quota, TotalMemoryUsed, nil
+func TestTotalMemory(t *testing.T) {
+	totalMemory, err := TotalMemory()
+	require.NoError(t, err)
+	assert.True(t, totalMemory > 0)
 }

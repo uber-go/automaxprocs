@@ -23,6 +23,7 @@
 package cgroups
 
 import (
+	"github.com/stretchr/testify/require"
 	"path/filepath"
 	"testing"
 
@@ -130,4 +131,13 @@ func TestCGroupsCPUQuota(t *testing.T) {
 			assert.NoError(t, err, tt.name)
 		}
 	}
+}
+
+func TestTotalMemory(t *testing.T) {
+	cgroups, err := NewCGroupsForCurrentProcess()
+	require.NoError(t, err)
+	quota, defined, err := cgroups.TotalMemoryQuota()
+	require.NoError(t, err)
+	assert.Equal(t, true, defined)
+	assert.True(t, quota > 0)
 }

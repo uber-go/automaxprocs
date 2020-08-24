@@ -18,47 +18,17 @@
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
 
-// +build linux
+package totalmemory
 
-package runtime
+import iruntime "go.uber.org/automaxprocs/internal/runtime"
 
-import (
-	"math"
-
-	cg "go.uber.org/automaxprocs/internal/cgroups"
-)
-
-// CPUQuotaToGOMAXPROCS converts the CPU quota applied to the calling process
-// to a valid GOMAXPROCS value.
-func CPUQuotaToGOMAXPROCS(minValue int) (int, CPUQuotaStatus, error) {
-	cgroups, err := cg.NewCGroupsForCurrentProcess()
-	if err != nil {
-		return -1, CPUQuotaUndefined, err
+// TotalMemory returns total memory in bytes or -1 when no total memory cannot be read from the system.
+// The backing implementation reads the total memory from cgroup `memory.limit_in_bytes`.
+// When running on no linux systems the implementation returns -1.
+func TotalMemory() (int64, error) {
+	totalMemory, status, err := iruntime.TotalMemory()
+	if status == iruntime.TotalMemoryUndefined || err != nil {
+		return -1, err
 	}
-
-	quota, defined, err := cgroups.CPUQuota()
-	if !defined || err != nil {
-		return -1, CPUQuotaUndefined, err
-	}
-
-	maxProcs := int(math.Floor(quota))
-	if minValue > 0 && maxProcs < minValue {
-		return minValue, CPUQuotaMinUsed, nil
-	}
-	return maxProcs, CPUQuotaUsed, nil
-}
-
-// TotalMemory returns total available memory.
-func TotalMemory() (int64, TotalMemoryStatus, error) {
-	cgroups, err := cg.NewCGroupsForCurrentProcess()
-	if err != nil {
-		return -1, TotalMemoryUndefined, err
-	}
-
-	quota, defined, err := cgroups.TotalMemoryQuota()
-	if !defined || err != nil {
-		return -1, TotalMemoryUndefined, err
-	}
-
-	return quota, TotalMemoryUsed, nil
+	return totalMemory, nil
 }

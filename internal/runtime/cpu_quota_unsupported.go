@@ -28,3 +28,8 @@ package runtime
 func CPUQuotaToGOMAXPROCS(_ int) (int, CPUQuotaStatus, error) {
 	return -1, CPUQuotaUndefined, nil
 }
+
+// TotalMemory returns total available memory.
+func TotalMemory() (int64, TotalMemoryStatus, error) {
+	return -1, TotalMemoryUndefined, nil
+}
