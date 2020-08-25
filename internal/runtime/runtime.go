@@ -23,7 +23,7 @@ package runtime
 // CPUQuotaStatus presents the status of how CPU quota is used
 type CPUQuotaStatus int
 
-// TotalMemory presents the status of how total memory quota is used
+// TotalMemoryStatus presents the status of how total memory quota is used
 type TotalMemoryStatus int
 
 const (

@@ -43,7 +43,6 @@ const (
 	_cgroupCPUCFSPeriodUsParam = "cpu.cfs_period_us"
 	// _cgroupMemoryLimitBytes is the file name for CGroup total memory parameter.
 	_cgroupMemoryLimitBytes = "memory.limit_in_bytes"
-
 )
 
 const (
