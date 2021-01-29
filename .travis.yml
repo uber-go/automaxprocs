@@ -15,6 +15,9 @@ matrix:
 install:
   - make install
 
+before_script:
+  - go get golang.org/x/lint/golint honnef.co/go/tools/cmd/staticcheck
+
 script:
   - test -z "$LINT" || make lint
   - make test
