@@ -53,6 +53,15 @@ func TestNewCGroupSubsysFromLine(t *testing.T) {
 				Name:       "/docker/1234567890abcdef",
 			},
 		},
+		{
+			name: "multi-subsys",
+			line: "12:cpu,cpuacct:/system.slice/containerd.service/kubepods-besteffort-podb41662f7_b03a_4c65_8ef9_6e4e55c3cf27.slice:cri-containerd:1753b7cbbf62734d812936961224d5bc0cf8f45214e0d5cdd1a781a053e7c48f",
+			expectedSubsys: &CGroupSubsys{
+				ID:         12,
+				Subsystems: []string{"cpu", "cpuacct"},
+				Name:       "/system.slice/containerd.service/kubepods-besteffort-podb41662f7_b03a_4c65_8ef9_6e4e55c3cf27.slice:cri-containerd:1753b7cbbf62734d812936961224d5bc0cf8f45214e0d5cdd1a781a053e7c48f",
+			},
+		},
 	}
 
 	for _, tt := range testTable {
@@ -65,7 +74,6 @@ func TestNewCGroupSubsysFromLine(t *testing.T) {
 func TestNewCGroupSubsysFromLineErr(t *testing.T) {
 	lines := []string{
 		"1:cpu",
-		"1:cpu,cpuacct:/:/necessary-field",
 		"not-a-number:cpu:/",
 	}
 	_, parseError := strconv.Atoi("not-a-number")
@@ -81,13 +89,8 @@ func TestNewCGroupSubsysFromLineErr(t *testing.T) {
 			expectedError: cgroupSubsysFormatInvalidError{lines[0]},
 		},
 		{
-			name:          "more-fields",
-			line:          lines[1],
-			expectedError: cgroupSubsysFormatInvalidError{lines[1]},
-		},
-		{
 			name:          "illegal-id",
-			line:          lines[2],
+			line:          lines[1],
 			expectedError: parseError,
 		},
 	}
