@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Support colons in cgroup names.
+
 ## v1.3.0 (2020-01-23)
 
 - Migrate to Go modules.
