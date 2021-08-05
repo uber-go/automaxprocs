@@ -47,7 +47,7 @@ func TestNewMountPointFromLine(t *testing.T) {
 				OptionalFields: []string{},
 				FSType:         "ext4",
 				MountSource:    "/dev/dm-0",
-				SuperOptions:   []string{"rw", "errors=remount-ro", "data=ordered"},
+				SuperOptions:   []string{""},
 			},
 		},
 		{
@@ -63,7 +63,7 @@ func TestNewMountPointFromLine(t *testing.T) {
 				OptionalFields: []string{"shared:1"},
 				FSType:         "cgroup",
 				MountSource:    "cgroup",
-				SuperOptions:   []string{"rw", "cpu"},
+				SuperOptions:   []string{"cpu"},
 			},
 		},
 	}

@@ -23,6 +23,7 @@
 package cgroups
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 
@@ -47,6 +48,7 @@ func TestNewCGroups(t *testing.T) {
 	assert.Equal(t, len(testTable), len(cgroups))
 	assert.NoError(t, err)
 
+	fmt.Printf("cgroups :%v", cgroups)
 	for _, tt := range testTable {
 		cgroup, exists := cgroups[tt.subsys]
 		assert.Equal(t, true, exists, "%q expected to present in `cgroups`", tt.subsys)

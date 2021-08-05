@@ -107,7 +107,7 @@ func NewMountPointFromLine(line string) (*MountPoint, error) {
 			if len(rootOpts) == 0 {
 				return nil, mountPointFormatInvalidError{line}
 			}
-			superOpts := rootOpts[len(rootOpts)-1:]
+			superOpts := strings.Split(rootOpts[len(rootOpts)-1], _mountInfoOptsSep)
 
 			return &MountPoint{
 				MountID:        mountID,
