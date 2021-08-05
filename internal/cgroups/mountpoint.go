@@ -136,6 +136,14 @@ func (mp *MountPoint) Translate(absPath string) (string, error) {
 		return "", err
 	}
 
+	if relPath == ".." || strings.HasPrefix(relPath, "../") {
+		return "", pathNotExposedFromMountPointError{
+			mountPoint: mp.MountPoint,
+			root:       mp.Root,
+			path:       absPath,
+		}
+	}
+
 	return filepath.Join(mp.MountPoint, relPath), nil
 }
 
