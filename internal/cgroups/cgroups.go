@@ -65,11 +65,14 @@ const (
 	_procPathCGroup     = "/proc/self/cgroup"
 	_procPathMountInfo  = "/proc/self/mountinfo"
 	_cgroupv2MountPoint = "/sys/fs/cgroup"
+
+	_cgroupV2CPUMaxDefaultPeriod = 100000
+	_cgroupV2CPUMaxQuotaMax      = "max"
 )
 
 const (
-	_cgroupv2CPUMaxQuota = iota
-	_cgroupv2CPUMaxPeriod
+	_cgroupv2CPUMaxQuotaIndex = iota
+	_cgroupv2CPUMaxPeriodIndex
 )
 
 // CGroups is a map that associates each CGroup with its subsystem name.
@@ -147,7 +150,7 @@ func IsCGroupV2() (bool, error) {
 }
 
 func isCGroupV2(procPathMountInfo string) (bool, error) {
-	isV2 := false
+	var isV2 bool
 	newMountPoint := func(mp *MountPoint) error {
 		if mp.FSType == _cgroupv2FSType && mp.MountPoint == _cgroupv2MountPoint {
 			isV2 = true
@@ -157,10 +160,7 @@ func isCGroupV2(procPathMountInfo string) (bool, error) {
 	if err := parseMountInfo(procPathMountInfo, newMountPoint); err != nil {
 		return false, err
 	}
-	if isV2 {
-		return true, nil
-	}
-	return false, nil
+	return isV2, nil
 }
 
 // CPUQuotaV2 returns the CPU quota applied with the CPU cgroup2 controller.
@@ -182,19 +182,24 @@ func cpuQuotaV2(cgroupv2MountPoint, cgroupv2CPUMax string) (float64, bool, error
 	scanner := bufio.NewScanner(cpuMaxParams)
 	if scanner.Scan() {
 		fields := strings.Fields(scanner.Text())
-		if len(fields) != 2 {
+		if len(fields) == 0 || len(fields) > 2 {
 			return -1, false, fmt.Errorf("invalid format")
 		}
-		if fields[0] == "max" {
+		if fields[_cgroupv2CPUMaxQuotaIndex] == _cgroupV2CPUMaxQuotaMax {
 			return -1, false, nil
 		}
-		max, err := strconv.Atoi(fields[_cgroupv2CPUMaxQuota])
+		max, err := strconv.Atoi(fields[_cgroupv2CPUMaxQuotaIndex])
 		if err != nil {
 			return -1, false, err
 		}
-		period, err := strconv.Atoi(fields[_cgroupv2CPUMaxPeriod])
-		if err != nil {
-			return -1, false, err
+		var period int
+		if len(fields) == 1 {
+			period = _cgroupV2CPUMaxDefaultPeriod
+		} else {
+			period, err = strconv.Atoi(fields[_cgroupv2CPUMaxPeriodIndex])
+			if err != nil {
+				return -1, false, err
+			}
 		}
 		return float64(max) / float64(period), true, nil
 	}

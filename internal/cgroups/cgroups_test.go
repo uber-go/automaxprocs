@@ -195,10 +195,10 @@ func TestCGroupsCPUQuotaV2(t *testing.T) {
 			shouldHaveError: false,
 		},
 		{
-			name:            "invalid",
-			expectedQuota:   -1.0,
-			expectedDefined: false,
-			shouldHaveError: true,
+			name:            "only-max",
+			expectedQuota:   5.0,
+			expectedDefined: true,
+			shouldHaveError: false,
 		},
 		{
 			name:            "invalid-max",
