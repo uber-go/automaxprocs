@@ -31,7 +31,7 @@ import (
 )
 
 func TestCGroupsIsCGroupV2(t *testing.T) {
-	testTable := []struct {
+	tests := []struct {
 		name            string
 		expectedIsV2    bool
 		shouldHaveError bool
@@ -58,22 +58,24 @@ func TestCGroupsIsCGroupV2(t *testing.T) {
 		},
 	}
 
-	for _, tt := range testTable {
-		mountInfoPath := filepath.Join(testDataProcPath, "v2", tt.name)
-		isV2, err := isCGroupV2(mountInfoPath)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			mountInfoPath := filepath.Join(testDataProcPath, "v2", tt.name)
+			isV2, err := isCGroupV2(mountInfoPath)
 
-		assert.Equal(t, tt.expectedIsV2, isV2, tt.name)
+			assert.Equal(t, tt.expectedIsV2, isV2, tt.name)
 
-		if tt.shouldHaveError {
-			assert.Error(t, err, tt.name)
-		} else {
-			assert.NoError(t, err, tt.name)
-		}
+			if tt.shouldHaveError {
+				assert.Error(t, err, tt.name)
+			} else {
+				assert.NoError(t, err, tt.name)
+			}
+		})
 	}
 }
 
 func TestCGroupsCPUQuotaV2(t *testing.T) {
-	testTable := []struct {
+	tests := []struct {
 		name            string
 		expectedQuota   float64
 		expectedDefined bool
@@ -117,15 +119,17 @@ func TestCGroupsCPUQuotaV2(t *testing.T) {
 	assert.NoError(t, err, "nonexistent")
 
 	cgroupPath := filepath.Join(testDataCGroupsPath, "v2")
-	for _, tt := range testTable {
-		quota, defined, err := cpuQuotaV2(cgroupPath, tt.name)
-		assert.Equal(t, tt.expectedQuota, quota, tt.name)
-		assert.Equal(t, tt.expectedDefined, defined, tt.name)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			quota, defined, err := cpuQuotaV2(cgroupPath, tt.name)
+			assert.Equal(t, tt.expectedQuota, quota, tt.name)
+			assert.Equal(t, tt.expectedDefined, defined, tt.name)
 
-		if tt.shouldHaveError {
-			assert.Error(t, err, tt.name)
-		} else {
-			assert.NoError(t, err, tt.name)
-		}
+			if tt.shouldHaveError {
+				assert.Error(t, err, tt.name)
+			} else {
+				assert.NoError(t, err, tt.name)
+			}
+		})
 	}
 }
