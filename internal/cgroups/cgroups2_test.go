@@ -111,12 +111,13 @@ func TestCGroupsCPUQuotaV2(t *testing.T) {
 			expectedDefined: false,
 			shouldHaveError: true,
 		},
+		{
+			name:            "nonexistent",
+			expectedQuota:   -1.0,
+			expectedDefined: false,
+			shouldHaveError: false,
+		},
 	}
-
-	quota, defined, err := cpuQuotaV2("nonexistent", "nonexistent")
-	assert.Equal(t, -1.0, quota, "nonexistent")
-	assert.Equal(t, false, defined, "nonexistent")
-	assert.NoError(t, err, "nonexistent")
 
 	cgroupPath := filepath.Join(testDataCGroupsPath, "v2")
 	for _, tt := range tests {
