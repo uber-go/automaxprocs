@@ -1,4 +1,4 @@
-// Copyright (c) 2017 Uber Technologies, Inc.
+// Copyright (c) 2022 Uber Technologies, Inc.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a copy
 // of this software and associated documentation files (the "Software"), to deal
@@ -30,60 +30,49 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestNewCGroups(t *testing.T) {
-	cgroupsProcCGroupPath := filepath.Join(testDataProcPath, "cgroups", "cgroup")
-	cgroupsProcMountInfoPath := filepath.Join(testDataProcPath, "cgroups", "mountinfo")
-
+func TestCGroupsIsCGroupV2(t *testing.T) {
 	testTable := []struct {
-		subsys string
-		path   string
+		name            string
+		expectedIsV2    bool
+		shouldHaveError bool
 	}{
-		{_cgroupSubsysCPU, "/sys/fs/cgroup/cpu,cpuacct"},
-		{_cgroupSubsysCPUAcct, "/sys/fs/cgroup/cpu,cpuacct"},
-		{_cgroupSubsysCPUSet, "/sys/fs/cgroup/cpuset"},
-		{_cgroupSubsysMemory, "/sys/fs/cgroup/memory/large"},
-	}
-
-	cgroups, err := NewCGroups(cgroupsProcMountInfoPath, cgroupsProcCGroupPath)
-	assert.Equal(t, len(testTable), len(cgroups))
-	assert.NoError(t, err)
-
-	for _, tt := range testTable {
-		cgroup, exists := cgroups[tt.subsys]
-		assert.Equal(t, true, exists, "%q expected to present in `cgroups`", tt.subsys)
-		assert.Equal(t, tt.path, cgroup.path, "%q expected for `cgroups[%q].path`, got %q", tt.path, tt.subsys, cgroup.path)
-	}
-}
-
-func TestNewCGroupsWithErrors(t *testing.T) {
-	testTable := []struct {
-		mountInfoPath string
-		cgroupPath    string
-	}{
-		{"non-existing-file", "/dev/null"},
-		{"/dev/null", "non-existing-file"},
 		{
-			"/dev/null",
-			filepath.Join(testDataProcPath, "invalid-cgroup", "cgroup"),
+			name:            "mountinfo",
+			expectedIsV2:    false,
+			shouldHaveError: false,
 		},
 		{
-			filepath.Join(testDataProcPath, "invalid-mountinfo", "mountinfo"),
-			"/dev/null",
+			name:            "mountinfo-v1-v2",
+			expectedIsV2:    false,
+			shouldHaveError: false,
 		},
 		{
-			filepath.Join(testDataProcPath, "untranslatable", "mountinfo"),
-			filepath.Join(testDataProcPath, "untranslatable", "cgroup"),
+			name:            "mountinfo-v2",
+			expectedIsV2:    true,
+			shouldHaveError: false,
+		},
+		{
+			name:            "mountinfo-nonexistent",
+			expectedIsV2:    false,
+			shouldHaveError: true,
 		},
 	}
 
 	for _, tt := range testTable {
-		cgroups, err := NewCGroups(tt.mountInfoPath, tt.cgroupPath)
-		assert.Nil(t, cgroups)
-		assert.Error(t, err)
+		mountInfoPath := filepath.Join(testDataProcPath, "v2", tt.name)
+		isV2, err := isCGroupV2(mountInfoPath)
+
+		assert.Equal(t, tt.expectedIsV2, isV2, tt.name)
+
+		if tt.shouldHaveError {
+			assert.Error(t, err, tt.name)
+		} else {
+			assert.NoError(t, err, tt.name)
+		}
 	}
 }
 
-func TestCGroupsCPUQuota(t *testing.T) {
+func TestCGroupsCPUQuotaV2(t *testing.T) {
 	testTable := []struct {
 		name            string
 		expectedQuota   float64
@@ -91,37 +80,45 @@ func TestCGroupsCPUQuota(t *testing.T) {
 		shouldHaveError bool
 	}{
 		{
-			name:            "cpu",
-			expectedQuota:   6.0,
+			name:            "set",
+			expectedQuota:   2.5,
 			expectedDefined: true,
 			shouldHaveError: false,
 		},
 		{
-			name:            "undefined",
+			name:            "unset",
 			expectedQuota:   -1.0,
 			expectedDefined: false,
 			shouldHaveError: false,
 		},
 		{
-			name:            "undefined-period",
+			name:            "only-max",
+			expectedQuota:   5.0,
+			expectedDefined: true,
+			shouldHaveError: false,
+		},
+		{
+			name:            "invalid-max",
+			expectedQuota:   -1.0,
+			expectedDefined: false,
+			shouldHaveError: true,
+		},
+		{
+			name:            "invalid-period",
 			expectedQuota:   -1.0,
 			expectedDefined: false,
 			shouldHaveError: true,
 		},
 	}
 
-	cgroups := make(CGroups)
-
-	quota, defined, err := cgroups.CPUQuota()
+	quota, defined, err := cpuQuotaV2("nonexistent", "nonexistent")
 	assert.Equal(t, -1.0, quota, "nonexistent")
 	assert.Equal(t, false, defined, "nonexistent")
 	assert.NoError(t, err, "nonexistent")
 
+	cgroupPath := filepath.Join(testDataCGroupsPath, "v2")
 	for _, tt := range testTable {
-		cgroupPath := filepath.Join(testDataCGroupsPath, tt.name)
-		cgroups[_cgroupSubsysCPU] = NewCGroup(cgroupPath)
-
-		quota, defined, err := cgroups.CPUQuota()
+		quota, defined, err := cpuQuotaV2(cgroupPath, tt.name)
 		assert.Equal(t, tt.expectedQuota, quota, tt.name)
 		assert.Equal(t, tt.expectedDefined, defined, tt.name)
 
