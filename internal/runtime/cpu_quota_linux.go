@@ -32,9 +32,11 @@ import (
 // CPUQuotaToGOMAXPROCS converts the CPU quota applied to the calling process
 // to a valid GOMAXPROCS value.
 func CPUQuotaToGOMAXPROCS(minValue int) (int, CPUQuotaStatus, error) {
-	var quota float64
-	var defined bool
-	var err error
+	var (
+		quota   float64
+		defined bool
+		err     error
+	)
 
 	isV2, err := cg.IsCGroupV2()
 	if err != nil {
