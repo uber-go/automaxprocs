@@ -35,27 +35,27 @@ import (
 func TestCGroupsIsCGroupV2(t *testing.T) {
 	tests := []struct {
 		name    string
-		want    bool
-		wantErr bool
+		isV2    bool
+		wantErr bool // should be false if isV2 is true
 	}{
 		{
 			name:    "mountinfo",
-			want:    false,
+			isV2:    false,
 			wantErr: false,
 		},
 		{
 			name:    "mountinfo-v1-v2",
-			want:    false,
+			isV2:    false,
 			wantErr: false,
 		},
 		{
 			name:    "mountinfo-v2",
-			want:    true,
+			isV2:    true,
 			wantErr: false,
 		},
 		{
 			name:    "mountinfo-nonexistent",
-			want:    false,
+			isV2:    false,
 			wantErr: true,
 		},
 	}
@@ -63,14 +63,14 @@ func TestCGroupsIsCGroupV2(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mountInfoPath := filepath.Join(testDataProcPath, "v2", tt.name)
-			isV2, err := isCGroupV2(mountInfoPath)
-
-			assert.Equal(t, tt.want, isV2, tt.name)
-
-			if tt.wantErr {
-				assert.Error(t, err, tt.name)
-			} else {
-				assert.NoError(t, err, tt.name)
+			_, err := newCGroups2FromMountInfo(mountInfoPath)
+			switch {
+			case tt.wantErr:
+				assert.Error(t, err)
+			case !tt.isV2:
+				assert.ErrorIs(t, err, ErrNotV2)
+			default:
+				assert.NoError(t, err)
 			}
 		})
 	}
