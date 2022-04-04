@@ -24,10 +24,12 @@
 package cgroups
 
 import (
+	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestCGroupsIsCGroupV2(t *testing.T) {
@@ -79,58 +81,78 @@ func TestCGroupsCPUQuotaV2(t *testing.T) {
 		name    string
 		want    float64
 		wantOK  bool
-		wantErr bool
+		wantErr string
 	}{
 		{
-			name:    "set",
-			want:    2.5,
-			wantOK:  true,
-			wantErr: false,
+			name:   "set",
+			want:   2.5,
+			wantOK: true,
 		},
 		{
-			name:    "unset",
-			want:    -1.0,
-			wantOK:  false,
-			wantErr: false,
+			name:   "unset",
+			want:   -1.0,
+			wantOK: false,
 		},
 		{
-			name:    "only-max",
-			want:    5.0,
-			wantOK:  true,
-			wantErr: false,
+			name:   "only-max",
+			want:   5.0,
+			wantOK: true,
 		},
 		{
 			name:    "invalid-max",
-			want:    -1.0,
-			wantOK:  false,
-			wantErr: true,
+			wantErr: `parsing "asdf": invalid syntax`,
 		},
 		{
 			name:    "invalid-period",
-			want:    -1.0,
-			wantOK:  false,
-			wantErr: true,
+			wantErr: `parsing "njn": invalid syntax`,
 		},
 		{
-			name:    "nonexistent",
-			want:    -1.0,
-			wantOK:  false,
-			wantErr: false,
+			name:   "nonexistent",
+			want:   -1.0,
+			wantOK: false,
+		},
+		{
+			name:    "empty",
+			wantErr: "unexpected EOF",
+		},
+		{
+			name:    "too-few-fields",
+			wantErr: "invalid format",
+		},
+		{
+			name:    "too-many-fields",
+			wantErr: "invalid format",
 		},
 	}
 
-	cgroupPath := filepath.Join(testDataCGroupsPath, "v2")
+	mountPoint := filepath.Join(testDataCGroupsPath, "v2")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			quota, defined, err := cpuQuotaV2(cgroupPath, tt.name)
-			assert.Equal(t, tt.want, quota, tt.name)
-			assert.Equal(t, tt.wantOK, defined, tt.name)
+			quota, defined, err := cpuQuotaV2(mountPoint, tt.name)
 
-			if tt.wantErr {
-				assert.Error(t, err, tt.name)
+			if len(tt.wantErr) > 0 {
+				require.Error(t, err, tt.name)
+				assert.Contains(t, err.Error(), tt.wantErr)
 			} else {
-				assert.NoError(t, err, tt.name)
+				require.NoError(t, err, tt.name)
+				assert.Equal(t, tt.want, quota, tt.name)
+				assert.Equal(t, tt.wantOK, defined, tt.name)
 			}
 		})
 	}
+}
+
+func TestCGroupsCPUQuotaV2_OtherErrors(t *testing.T) {
+	t.Run("no permissions to open", func(t *testing.T) {
+		t.Parallel()
+
+		const name = "foo"
+
+		mountPoint := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(mountPoint, name), nil /* write only*/, 0222))
+
+		_, _, err := cpuQuotaV2(mountPoint, name)
+		require.Error(t, err)
+		assert.Contains(t, err.Error(), "permission denied")
+	})
 }
