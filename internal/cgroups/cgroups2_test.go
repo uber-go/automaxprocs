@@ -32,29 +32,29 @@ import (
 
 func TestCGroupsIsCGroupV2(t *testing.T) {
 	tests := []struct {
-		name            string
-		expectedIsV2    bool
-		shouldHaveError bool
+		name    string
+		want    bool
+		wantErr bool
 	}{
 		{
-			name:            "mountinfo",
-			expectedIsV2:    false,
-			shouldHaveError: false,
+			name:    "mountinfo",
+			want:    false,
+			wantErr: false,
 		},
 		{
-			name:            "mountinfo-v1-v2",
-			expectedIsV2:    false,
-			shouldHaveError: false,
+			name:    "mountinfo-v1-v2",
+			want:    false,
+			wantErr: false,
 		},
 		{
-			name:            "mountinfo-v2",
-			expectedIsV2:    true,
-			shouldHaveError: false,
+			name:    "mountinfo-v2",
+			want:    true,
+			wantErr: false,
 		},
 		{
-			name:            "mountinfo-nonexistent",
-			expectedIsV2:    false,
-			shouldHaveError: true,
+			name:    "mountinfo-nonexistent",
+			want:    false,
+			wantErr: true,
 		},
 	}
 
@@ -63,9 +63,9 @@ func TestCGroupsIsCGroupV2(t *testing.T) {
 			mountInfoPath := filepath.Join(testDataProcPath, "v2", tt.name)
 			isV2, err := isCGroupV2(mountInfoPath)
 
-			assert.Equal(t, tt.expectedIsV2, isV2, tt.name)
+			assert.Equal(t, tt.want, isV2, tt.name)
 
-			if tt.shouldHaveError {
+			if tt.wantErr {
 				assert.Error(t, err, tt.name)
 			} else {
 				assert.NoError(t, err, tt.name)
@@ -76,46 +76,46 @@ func TestCGroupsIsCGroupV2(t *testing.T) {
 
 func TestCGroupsCPUQuotaV2(t *testing.T) {
 	tests := []struct {
-		name            string
-		expectedQuota   float64
-		expectedDefined bool
-		shouldHaveError bool
+		name    string
+		want    float64
+		wantOK  bool
+		wantErr bool
 	}{
 		{
-			name:            "set",
-			expectedQuota:   2.5,
-			expectedDefined: true,
-			shouldHaveError: false,
+			name:    "set",
+			want:    2.5,
+			wantOK:  true,
+			wantErr: false,
 		},
 		{
-			name:            "unset",
-			expectedQuota:   -1.0,
-			expectedDefined: false,
-			shouldHaveError: false,
+			name:    "unset",
+			want:    -1.0,
+			wantOK:  false,
+			wantErr: false,
 		},
 		{
-			name:            "only-max",
-			expectedQuota:   5.0,
-			expectedDefined: true,
-			shouldHaveError: false,
+			name:    "only-max",
+			want:    5.0,
+			wantOK:  true,
+			wantErr: false,
 		},
 		{
-			name:            "invalid-max",
-			expectedQuota:   -1.0,
-			expectedDefined: false,
-			shouldHaveError: true,
+			name:    "invalid-max",
+			want:    -1.0,
+			wantOK:  false,
+			wantErr: true,
 		},
 		{
-			name:            "invalid-period",
-			expectedQuota:   -1.0,
-			expectedDefined: false,
-			shouldHaveError: true,
+			name:    "invalid-period",
+			want:    -1.0,
+			wantOK:  false,
+			wantErr: true,
 		},
 		{
-			name:            "nonexistent",
-			expectedQuota:   -1.0,
-			expectedDefined: false,
-			shouldHaveError: false,
+			name:    "nonexistent",
+			want:    -1.0,
+			wantOK:  false,
+			wantErr: false,
 		},
 	}
 
@@ -123,10 +123,10 @@ func TestCGroupsCPUQuotaV2(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			quota, defined, err := cpuQuotaV2(cgroupPath, tt.name)
-			assert.Equal(t, tt.expectedQuota, quota, tt.name)
-			assert.Equal(t, tt.expectedDefined, defined, tt.name)
+			assert.Equal(t, tt.want, quota, tt.name)
+			assert.Equal(t, tt.wantOK, defined, tt.name)
 
-			if tt.shouldHaveError {
+			if tt.wantErr {
 				assert.Error(t, err, tt.name)
 			} else {
 				assert.NoError(t, err, tt.name)
