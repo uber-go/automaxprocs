@@ -128,7 +128,10 @@ func TestCGroupsCPUQuotaV2(t *testing.T) {
 	mountPoint := filepath.Join(testDataCGroupsPath, "v2")
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			quota, defined, err := cpuQuotaV2(mountPoint, tt.name)
+			quota, defined, err := (&CGroups2{
+				mountPoint: mountPoint,
+				cpuMaxFile: tt.name,
+			}).CPUQuota()
 
 			if len(tt.wantErr) > 0 {
 				require.Error(t, err, tt.name)
@@ -151,7 +154,7 @@ func TestCGroupsCPUQuotaV2_OtherErrors(t *testing.T) {
 		mountPoint := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(mountPoint, name), nil /* write only*/, 0222))
 
-		_, _, err := cpuQuotaV2(mountPoint, name)
+		_, _, err := (&CGroups2{mountPoint: mountPoint, cpuMaxFile: name}).CPUQuota()
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "permission denied")
 	})

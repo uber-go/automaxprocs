@@ -25,6 +25,7 @@ package cgroups
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -52,10 +53,36 @@ const (
 	_cgroupv2CPUMaxPeriodIndex
 )
 
-// IsCGroupV2 returns true if the system supports and uses cgroup2.
-// It gets the required information for deciding from mountinfo file.
-func IsCGroupV2() (bool, error) {
-	return isCGroupV2(_procPathMountInfo)
+// ErrNotV2 indicates that the system is not using cgroups2.
+var ErrNotV2 = errors.New("not using cgroups2")
+
+// CGroups2 provides access to cgroups data for systems using cgroups2.
+type CGroups2 struct {
+	mountPoint string
+	cpuMaxFile string
+}
+
+// NewCGroups2ForCurrentProcess builds a CGroups2 for the current process.
+//
+// This returns ErrNotV2 if the system is not using cgroups2.
+func NewCGroups2ForCurrentProcess() (*CGroups2, error) {
+	return newCGroups2FromMountInfo(_procPathMountInfo)
+}
+
+func newCGroups2FromMountInfo(mountInfoPath string) (*CGroups2, error) {
+	isV2, err := isCGroupV2(mountInfoPath)
+	if err != nil {
+		return nil, err
+	}
+
+	if !isV2 {
+		return nil, ErrNotV2
+	}
+
+	return &CGroups2{
+		mountPoint: _cgroupv2MountPoint,
+		cpuMaxFile: _cgroupv2CPUMax,
+	}, nil
 }
 
 func isCGroupV2(procPathMountInfo string) (bool, error) {
@@ -72,16 +99,12 @@ func isCGroupV2(procPathMountInfo string) (bool, error) {
 	return isV2, nil
 }
 
-// CPUQuotaV2 returns the CPU quota applied with the CPU cgroup2 controller.
+// CPUQuota returns the CPU quota applied with the CPU cgroup2 controller.
 // It is a result of reading cpu quota and period from cpu.max file.
 // It will return `cpu.max / cpu.period`. If cpu.max is set to max, it returns
 // (-1, false, nil)
-func CPUQuotaV2() (float64, bool, error) {
-	return cpuQuotaV2(_cgroupv2MountPoint, _cgroupv2CPUMax)
-}
-
-func cpuQuotaV2(cgroupv2MountPoint, cgroupv2CPUMax string) (float64, bool, error) {
-	cpuMaxParams, err := os.Open(path.Join(cgroupv2MountPoint, cgroupv2CPUMax))
+func (cg *CGroups2) CPUQuota() (float64, bool, error) {
+	cpuMaxParams, err := os.Open(path.Join(cg.mountPoint, cg.cpuMaxFile))
 	if err != nil {
 		if os.IsNotExist(err) {
 			return -1, false, nil

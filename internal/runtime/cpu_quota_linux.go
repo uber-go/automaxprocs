@@ -24,6 +24,7 @@
 package runtime
 
 import (
+	"errors"
 	"math"
 
 	cg "go.uber.org/automaxprocs/internal/cgroups"
@@ -32,32 +33,20 @@ import (
 // CPUQuotaToGOMAXPROCS converts the CPU quota applied to the calling process
 // to a valid GOMAXPROCS value.
 func CPUQuotaToGOMAXPROCS(minValue int) (int, CPUQuotaStatus, error) {
-	var (
-		quota   float64
-		defined bool
-		err     error
-	)
-
-	isV2, err := cg.IsCGroupV2()
+	var cgroups interface{ CPUQuota() (float64, bool, error) }
+	cgroups, err := cg.NewCGroups2ForCurrentProcess()
 	if err != nil {
-		return -1, CPUQuotaUndefined, err
-	}
-
-	if isV2 {
-		quota, defined, err = cg.CPUQuotaV2()
-		if !defined || err != nil {
-			return -1, CPUQuotaUndefined, err
+		if errors.Is(err, cg.ErrNotV2) {
+			cgroups, err = cg.NewCGroupsForCurrentProcess()
 		}
-	} else {
-		cgroups, err := cg.NewCGroupsForCurrentProcess()
 		if err != nil {
 			return -1, CPUQuotaUndefined, err
 		}
+	}
 
-		quota, defined, err = cgroups.CPUQuota()
-		if !defined || err != nil {
-			return -1, CPUQuotaUndefined, err
-		}
+	quota, defined, err := cgroups.CPUQuota()
+	if !defined || err != nil {
+		return -1, CPUQuotaUndefined, err
 	}
 
 	maxProcs := int(math.Floor(quota))
