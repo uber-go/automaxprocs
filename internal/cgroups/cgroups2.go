@@ -86,19 +86,19 @@ func newCGroups2FromMountInfo(mountInfoPath string) (*CGroups2, error) {
 }
 
 func isCGroupV2(procPathMountInfo string) (bool, error) {
-        var (
-                isV2          bool
-                newMountPoint = func(mp *MountPoint) error {
-                        isV2 = mp.FSType == _cgroupv2FSType && mp.MountPoint == _cgroupv2MountPoint
-                        return nil
-                }
-        )
-
-        if err := parseMountInfo(procPathMountInfo, newMountPoint); err != nil {
-                return false, err
+    var (
+        isV2          bool
+        newMountPoint = func(mp *MountPoint) error {
+            isV2 = mp.FSType == _cgroupv2FSType && mp.MountPoint == _cgroupv2MountPoint
+            return nil
         }
+    )
 
-        return isV2, nil
+    if err := parseMountInfo(procPathMountInfo, newMountPoint); err != nil {
+        return false, err
+    }
+
+    return isV2, nil
 }
 
 // CPUQuota returns the CPU quota applied with the CPU cgroup2 controller.
