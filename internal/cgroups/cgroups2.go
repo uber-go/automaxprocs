@@ -119,13 +119,16 @@ func (cg *CGroups2) CPUQuota() (float64, bool, error) {
 		if len(fields) == 0 || len(fields) > 2 {
 			return -1, false, fmt.Errorf("invalid format")
 		}
+		
 		if fields[_cgroupv2CPUMaxQuotaIndex] == _cgroupV2CPUMaxQuotaMax {
 			return -1, false, nil
 		}
+		
 		max, err := strconv.Atoi(fields[_cgroupv2CPUMaxQuotaIndex])
 		if err != nil {
 			return -1, false, err
 		}
+		
 		var period int
 		if len(fields) == 1 {
 			period = _cgroupV2CPUMaxDefaultPeriod
@@ -135,8 +138,10 @@ func (cg *CGroups2) CPUQuota() (float64, bool, error) {
 				return -1, false, err
 			}
 		}
+		
 		return float64(max) / float64(period), true, nil
 	}
+	
 	if err := scanner.Err(); err != nil {
 		return -1, false, err
 	}
