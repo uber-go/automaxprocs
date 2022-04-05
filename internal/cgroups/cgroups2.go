@@ -86,19 +86,19 @@ func newCGroups2FromMountInfo(mountInfoPath string) (*CGroups2, error) {
 }
 
 func isCGroupV2(procPathMountInfo string) (bool, error) {
-    var (
-        isV2          bool
-        newMountPoint = func(mp *MountPoint) error {
-            isV2 = mp.FSType == _cgroupv2FSType && mp.MountPoint == _cgroupv2MountPoint
-            return nil
-        }
-    )
+	var (
+		isV2          bool
+		newMountPoint = func(mp *MountPoint) error {
+			isV2 = mp.FSType == _cgroupv2FSType && mp.MountPoint == _cgroupv2MountPoint
+			return nil
+		}
+	)
 
-    if err := parseMountInfo(procPathMountInfo, newMountPoint); err != nil {
-        return false, err
-    }
+	if err := parseMountInfo(procPathMountInfo, newMountPoint); err != nil {
+		return false, err
+	}
 
-    return isV2, nil
+	return isV2, nil
 }
 
 // CPUQuota returns the CPU quota applied with the CPU cgroup2 controller.
@@ -106,46 +106,46 @@ func isCGroupV2(procPathMountInfo string) (bool, error) {
 // It will return `cpu.max / cpu.period`. If cpu.max is set to max, it returns
 // (-1, false, nil)
 func (cg *CGroups2) CPUQuota() (float64, bool, error) {
-    cpuMaxParams, err := os.Open(path.Join(cg.mountPoint, cg.cpuMaxFile))
-    if err != nil {
-        if os.IsNotExist(err) {
-            return -1, false, nil
-        }
-        return -1, false, err
-    }
+	cpuMaxParams, err := os.Open(path.Join(cg.mountPoint, cg.cpuMaxFile))
+	if err != nil {
+		if os.IsNotExist(err) {
+			return -1, false, nil
+		}
+		return -1, false, err
+	}
 
-    scanner := bufio.NewScanner(cpuMaxParams)
-    if scanner.Scan() {
-        fields := strings.Fields(scanner.Text())
-        if len(fields) == 0 || len(fields) > 2 {
-            return -1, false, fmt.Errorf("invalid format")
-        }
+	scanner := bufio.NewScanner(cpuMaxParams)
+	if scanner.Scan() {
+		fields := strings.Fields(scanner.Text())
+		if len(fields) == 0 || len(fields) > 2 {
+			return -1, false, fmt.Errorf("invalid format")
+		}
 
-        if fields[_cgroupv2CPUMaxQuotaIndex] == _cgroupV2CPUMaxQuotaMax {
-            return -1, false, nil
-        }
+		if fields[_cgroupv2CPUMaxQuotaIndex] == _cgroupV2CPUMaxQuotaMax {
+			return -1, false, nil
+		}
 
-        max, err := strconv.Atoi(fields[_cgroupv2CPUMaxQuotaIndex])
-        if err != nil {
-            return -1, false, err
-        }
+		max, err := strconv.Atoi(fields[_cgroupv2CPUMaxQuotaIndex])
+		if err != nil {
+			return -1, false, err
+		}
 
-        var period int
-        if len(fields) == 1 {
-            period = _cgroupV2CPUMaxDefaultPeriod
-        } else {
-            period, err = strconv.Atoi(fields[_cgroupv2CPUMaxPeriodIndex])
-            if err != nil {
-                return -1, false, err
-            }
-        }
+		var period int
+		if len(fields) == 1 {
+			period = _cgroupV2CPUMaxDefaultPeriod
+		} else {
+			period, err = strconv.Atoi(fields[_cgroupv2CPUMaxPeriodIndex])
+			if err != nil {
+				return -1, false, err
+			}
+		}
 
-        return float64(max) / float64(period), true, nil
-    }
+		return float64(max) / float64(period), true, nil
+	}
 
-    if err := scanner.Err(); err != nil {
-        return -1, false, err
-    }
+	if err := scanner.Err(); err != nil {
+		return -1, false, err
+	}
 
-    return 0, false, io.ErrUnexpectedEOF
+	return 0, false, io.ErrUnexpectedEOF
 }
