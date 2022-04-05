@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.0 (2022-04-05)
+
+- Add support for cgroups v2.
+
+Thanks to @emadolsky for their contribution to this release.
+
 ## v1.4.0 (2021-02-01)
 
 - Support colons in cgroup names.
