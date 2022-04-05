@@ -106,45 +106,46 @@ func isCGroupV2(procPathMountInfo string) (bool, error) {
 // It will return `cpu.max / cpu.period`. If cpu.max is set to max, it returns
 // (-1, false, nil)
 func (cg *CGroups2) CPUQuota() (float64, bool, error) {
-	cpuMaxParams, err := os.Open(path.Join(cg.mountPoint, cg.cpuMaxFile))
-	if err != nil {
-		if os.IsNotExist(err) {
-			return -1, false, nil
-		}
-		return -1, false, err
-	}
+    cpuMaxParams, err := os.Open(path.Join(cg.mountPoint, cg.cpuMaxFile))
+    if err != nil {
+        if os.IsNotExist(err) {
+            return -1, false, nil
+        }
+        return -1, false, err
+    }
 
-	scanner := bufio.NewScanner(cpuMaxParams)
-	if scanner.Scan() {
-		fields := strings.Fields(scanner.Text())
-		if len(fields) == 0 || len(fields) > 2 {
-			return -1, false, fmt.Errorf("invalid format")
-		}
-		
-		if fields[_cgroupv2CPUMaxQuotaIndex] == _cgroupV2CPUMaxQuotaMax {
-			return -1, false, nil
-		}
-		
-		max, err := strconv.Atoi(fields[_cgroupv2CPUMaxQuotaIndex])
-		if err != nil {
-			return -1, false, err
-		}
-		
-		var period int
-		if len(fields) == 1 {
-			period = _cgroupV2CPUMaxDefaultPeriod
-		} else {
-			period, err = strconv.Atoi(fields[_cgroupv2CPUMaxPeriodIndex])
-			if err != nil {
-				return -1, false, err
-			}
-		}
-		
-		return float64(max) / float64(period), true, nil
-	}
-	
-	if err := scanner.Err(); err != nil {
-		return -1, false, err
-	}
-	return 0, false, io.ErrUnexpectedEOF
+    scanner := bufio.NewScanner(cpuMaxParams)
+    if scanner.Scan() {
+        fields := strings.Fields(scanner.Text())
+        if len(fields) == 0 || len(fields) > 2 {
+            return -1, false, fmt.Errorf("invalid format")
+        }
+
+        if fields[_cgroupv2CPUMaxQuotaIndex] == _cgroupV2CPUMaxQuotaMax {
+            return -1, false, nil
+        }
+
+        max, err := strconv.Atoi(fields[_cgroupv2CPUMaxQuotaIndex])
+        if err != nil {
+            return -1, false, err
+        }
+
+        var period int
+        if len(fields) == 1 {
+            period = _cgroupV2CPUMaxDefaultPeriod
+        } else {
+            period, err = strconv.Atoi(fields[_cgroupv2CPUMaxPeriodIndex])
+            if err != nil {
+                return -1, false, err
+            }
+        }
+
+        return float64(max) / float64(period), true, nil
+    }
+
+    if err := scanner.Err(); err != nil {
+        return -1, false, err
+    }
+
+    return 0, false, io.ErrUnexpectedEOF
 }
