@@ -1,5 +1,9 @@
 # Changelog
 
+## v1.5.1 (2022-04-06)
+
+- Fix cgroups v2 mountpoint detection.
+
 ## v1.5.0 (2022-04-05)
 
 - Add support for cgroups v2.
