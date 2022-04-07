@@ -25,23 +25,12 @@ git remote add upstream https://github.com/uber-go/automaxprocs.git
 git fetch upstream
 ```
 
-Install the test dependencies:
-
-```
-make dependencies
-```
-
 Make sure that the tests and the linters pass:
 
 ```
 make test
 make lint
 ```
-
-If you're not using the minor version of Go specified in the Makefile's
-`LINTABLE_MINOR_VERSIONS` variable, `make lint` doesn't do anything. This is
-fine, but it means that you'll only discover lint failures after you open your
-pull request.
 
 ## Making Changes
 
