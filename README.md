@@ -16,7 +16,7 @@ func main() {
 }
 ```
 
-# Benchmarks
+# Performance
 Data measured from Uber's internal load balancer. We ran the load balancer with 200% CPU quota (i.e., 2 cores):
 
 | GOMAXPROCS         |  RPS      | P50 (ms) | P99.9 (ms) |
