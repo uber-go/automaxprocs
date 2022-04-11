@@ -25,6 +25,7 @@ package cgroups
 
 import (
 	"os"
+	"os/user"
 	"path/filepath"
 	"testing"
 
@@ -34,36 +35,42 @@ import (
 
 func TestCGroupsIsCGroupV2(t *testing.T) {
 	tests := []struct {
-		name    string
-		isV2    bool
-		wantErr bool // should be false if isV2 is true
+		name       string
+		procCgroup string
+		isV2       bool
+		wantErr    bool // should be false if isV2 is true
 	}{
 		{
-			name:    "mountinfo",
-			isV2:    false,
-			wantErr: false,
+			name:       "mountinfo",
+			procCgroup: "cgroup-root",
+			isV2:       false,
+			wantErr:    false,
 		},
 		{
-			name:    "mountinfo-v1-v2",
-			isV2:    false,
-			wantErr: false,
+			name:       "mountinfo-v1-v2",
+			procCgroup: "cgroup-root",
+			isV2:       false,
+			wantErr:    false,
 		},
 		{
-			name:    "mountinfo-v2",
-			isV2:    true,
-			wantErr: false,
+			name:       "mountinfo-v2",
+			procCgroup: "cgroup-root",
+			isV2:       true,
+			wantErr:    false,
 		},
 		{
-			name:    "mountinfo-nonexistent",
-			isV2:    false,
-			wantErr: true,
+			name:       "mountinfo-nonexistent",
+			procCgroup: "cgroup-root",
+			isV2:       false,
+			wantErr:    true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mountInfoPath := filepath.Join(testDataProcPath, "v2", tt.name)
-			_, err := newCGroups2FromMountInfo(mountInfoPath)
+			procCgroupPath := filepath.Join(testDataProcPath, "v2", tt.procCgroup)
+			_, err := newCGroups2From(mountInfoPath, procCgroupPath)
 			switch {
 			case tt.wantErr:
 				assert.Error(t, err)
@@ -130,6 +137,7 @@ func TestCGroupsCPUQuotaV2(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			quota, defined, err := (&CGroups2{
 				mountPoint: mountPoint,
+				groupPath:  "/",
 				cpuMaxFile: tt.name,
 			}).CPUQuota()
 
@@ -145,8 +153,38 @@ func TestCGroupsCPUQuotaV2(t *testing.T) {
 	}
 }
 
+func TestCGroup2GroupPathDiscovery(t *testing.T) {
+	tests := []struct {
+		procCgroup string
+		wantPath   string
+	}{
+		{
+			procCgroup: "cgroup-root",
+			wantPath:   "/",
+		},
+		{
+			procCgroup: "cgroup-subdir",
+			wantPath:   "/Example",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.procCgroup, func(t *testing.T) {
+			mountInfoPath := filepath.Join(testDataProcPath, "v2", "mountinfo-v2")
+			procCgroupPath := filepath.Join(testDataProcPath, "v2", tt.procCgroup)
+			cgroups, err := newCGroups2From(mountInfoPath, procCgroupPath)
+			require.NoError(t, err)
+			assert.Equal(t, tt.wantPath, cgroups.groupPath)
+		})
+	}
+}
+
 func TestCGroupsCPUQuotaV2_OtherErrors(t *testing.T) {
 	t.Run("no permissions to open", func(t *testing.T) {
+		if u, err := user.Current(); err == nil && u.Uid == "0" {
+			t.Skip("running as root, test skipped")
+		}
+
 		t.Parallel()
 
 		const name = "foo"
@@ -154,7 +192,7 @@ func TestCGroupsCPUQuotaV2_OtherErrors(t *testing.T) {
 		mountPoint := t.TempDir()
 		require.NoError(t, os.WriteFile(filepath.Join(mountPoint, name), nil /* write only*/, 0222))
 
-		_, _, err := (&CGroups2{mountPoint: mountPoint, cpuMaxFile: name}).CPUQuota()
+		_, _, err := (&CGroups2{mountPoint: mountPoint, groupPath: "/", cpuMaxFile: name}).CPUQuota()
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "permission denied")
 	})
