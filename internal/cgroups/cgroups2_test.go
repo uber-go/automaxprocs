@@ -173,6 +173,22 @@ func TestCGroup2GroupPathDiscovery(t *testing.T) {
 	}
 }
 
+func TestCGroup2GroupPathDiscovery_Errors(t *testing.T) {
+	t.Run("no matching subsystem", func(t *testing.T) {
+		mountInfoPath := filepath.Join(testDataProcPath, "v2", "mountinfo-v2")
+		procCgroupPath := filepath.Join(testDataProcPath, "v2", "cgroup-no-match")
+		_, err := newCGroups2From(mountInfoPath, procCgroupPath)
+		assert.ErrorIs(t, err, ErrNotV2)
+	})
+
+	t.Run("invalid subsystems", func(t *testing.T) {
+		mountInfoPath := filepath.Join(testDataProcPath, "v2", "mountinfo-v2")
+		procCgroupPath := filepath.Join(testDataProcPath, "v2", "cgroup-invalid")
+		_, err := newCGroups2From(mountInfoPath, procCgroupPath)
+		assert.Contains(t, err.Error(), "invalid format for CGroupSubsys")
+	})
+}
+
 func TestCGroupsCPUQuotaV2_OtherErrors(t *testing.T) {
 	t.Run("no permissions to open", func(t *testing.T) {
 		t.Parallel()
