@@ -25,7 +25,6 @@ package cgroups
 
 import (
 	"os"
-	"os/user"
 	"path/filepath"
 	"testing"
 
@@ -176,10 +175,6 @@ func TestCGroup2GroupPathDiscovery(t *testing.T) {
 
 func TestCGroupsCPUQuotaV2_OtherErrors(t *testing.T) {
 	t.Run("no permissions to open", func(t *testing.T) {
-		if u, err := user.Current(); err == nil && u.Uid == "0" {
-			t.Skip("running as root, test skipped")
-		}
-
 		t.Parallel()
 
 		const name = "foo"
