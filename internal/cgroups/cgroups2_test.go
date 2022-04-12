@@ -35,41 +35,36 @@ import (
 
 func TestCGroupsIsCGroupV2(t *testing.T) {
 	tests := []struct {
-		name       string
-		procCgroup string
-		isV2       bool
-		wantErr    bool // should be false if isV2 is true
+		name    string
+		isV2    bool
+		wantErr bool // should be false if isV2 is true
 	}{
 		{
-			name:       "mountinfo",
-			procCgroup: "cgroup-root",
-			isV2:       false,
-			wantErr:    false,
+			name:    "mountinfo",
+			isV2:    false,
+			wantErr: false,
 		},
 		{
-			name:       "mountinfo-v1-v2",
-			procCgroup: "cgroup-root",
-			isV2:       false,
-			wantErr:    false,
+			name:    "mountinfo-v1-v2",
+			isV2:    false,
+			wantErr: false,
 		},
 		{
-			name:       "mountinfo-v2",
-			procCgroup: "cgroup-root",
-			isV2:       true,
-			wantErr:    false,
+			name:    "mountinfo-v2",
+			isV2:    true,
+			wantErr: false,
 		},
 		{
-			name:       "mountinfo-nonexistent",
-			procCgroup: "cgroup-root",
-			isV2:       false,
-			wantErr:    true,
+			name:    "mountinfo-nonexistent",
+			isV2:    false,
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mountInfoPath := filepath.Join(testDataProcPath, "v2", tt.name)
-			procCgroupPath := filepath.Join(testDataProcPath, "v2", tt.procCgroup)
+			procCgroupPath := filepath.Join(testDataProcPath, "v2", "cgroup-root")
 			_, err := newCGroups2From(mountInfoPath, procCgroupPath)
 			switch {
 			case tt.wantErr:
