@@ -87,11 +87,16 @@ func TestSet(t *testing.T) {
 
 	t.Run("EnvVarPresent", func(t *testing.T) {
 		withMax(t, 42, func() {
+			assert.Equal(t, "", os.Getenv(_maxProcsKey), "shouldn't have GOMAXPROCS env var")
 			prev := currentMaxProcs()
 			undo, err := Set()
 			defer undo()
 			require.NoError(t, err, "Set failed")
-			assert.Equal(t, prev, currentMaxProcs(), "shouldn't alter GOMAXPROCS")
+
+			after := currentMaxProcs()
+			assert.Equal(t, prev, after, "shouldn't alter GOMAXPROCS")
+			assert.Equal(t, strconv.Itoa(after), os.Getenv(_maxProcsKey), "should have GOMAXPROCS env var")
+			_ = os.Unsetenv(_maxProcsKey)
 		})
 	})
 

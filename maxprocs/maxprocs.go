@@ -26,6 +26,7 @@ package maxprocs // import "go.uber.org/automaxprocs/maxprocs"
 import (
 	"os"
 	"runtime"
+	"strconv"
 
 	iruntime "go.uber.org/automaxprocs/internal/runtime"
 )
@@ -126,5 +127,7 @@ func Set(opts ...Option) (func(), error) {
 	}
 
 	runtime.GOMAXPROCS(maxProcs)
+
+	_ = os.Setenv("GOMAXPROCS", strconv.Itoa(maxProcs))
 	return undo, nil
 }
