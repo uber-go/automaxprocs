@@ -133,6 +133,7 @@ func (cg *CGroups2) CPUQuota() (float64, bool, error) {
 		}
 		return -1, false, err
 	}
+	defer cpuMaxParams.Close()
 
 	scanner := bufio.NewScanner(cpuMaxParams)
 	if scanner.Scan() {
