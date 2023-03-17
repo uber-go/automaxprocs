@@ -1,5 +1,11 @@
 # Changelog
 
+## v1.5.2 (2023-03-16)
+
+- Support child control cgroups
+- Fix file descriptor leak
+- Update dependencies
+
 ## v1.5.1 (2022-04-06)
 
 - Fix cgroups v2 mountpoint detection.
