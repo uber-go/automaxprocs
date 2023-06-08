@@ -103,6 +103,12 @@ func TestCGroupsCPUQuota(t *testing.T) {
 			shouldHaveError: false,
 		},
 		{
+			name:            "zero-period",
+			expectedQuota:   -1.0,
+			expectedDefined: false,
+			shouldHaveError: false,
+		},
+		{
 			name:            "undefined-period",
 			expectedQuota:   -1.0,
 			expectedDefined: false,
