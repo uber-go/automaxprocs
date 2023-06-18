@@ -125,6 +125,10 @@ func TestCGroupsCPUQuotaV2(t *testing.T) {
 			name:    "too-many-fields",
 			wantErr: "invalid format",
 		},
+		{
+			name:    "zero-period",
+			wantErr: "zero value for period is not allowed",
+		},
 	}
 
 	mountPoint := filepath.Join(testDataCGroupsPath, "v2")
