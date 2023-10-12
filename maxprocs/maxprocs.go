@@ -38,8 +38,9 @@ func currentMaxProcs() int {
 
 type config struct {
 	printf        func(string, ...interface{})
-	procs         func(int) (int, iruntime.CPUQuotaStatus, error)
+	procs         func(int, bool) (int, iruntime.CPUQuotaStatus, error)
 	minGOMAXPROCS int
+	roundUpQuota  bool
 }
 
 func (c *config) log(fmt string, args ...interface{}) {
@@ -68,6 +69,13 @@ func Min(n int) Option {
 		if n >= 1 {
 			cfg.minGOMAXPROCS = n
 		}
+	})
+}
+
+// RoundUpQuota controls whether the CPU quota should be rounded up instead of down.
+func RoundUpQuota(v bool) Option {
+	return optionFunc(func(cfg *config) {
+		cfg.roundUpQuota = v
 	})
 }
 
@@ -102,7 +110,7 @@ func Set(opts ...Option) (func(), error) {
 		return undoNoop, nil
 	}
 
-	maxProcs, status, err := cfg.procs(cfg.minGOMAXPROCS)
+	maxProcs, status, err := cfg.procs(cfg.minGOMAXPROCS, cfg.roundUpQuota)
 	if err != nil {
 		return undoNoop, err
 	}
