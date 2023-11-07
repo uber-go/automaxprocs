@@ -43,7 +43,7 @@ func CPUQuotaToGOMAXPROCS(minValue int) (int, CPUQuotaStatus, error) {
 		return -1, CPUQuotaUndefined, err
 	}
 
-	maxProcs := int(math.Floor(quota))
+	maxProcs := int(math.Ceil(quota))
 	if minValue > 0 && maxProcs < minValue {
 		return minValue, CPUQuotaMinUsed, nil
 	}
