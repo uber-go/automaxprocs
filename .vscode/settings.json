@@ -1,0 +1,5 @@
+{
+    "go.toolsEnvVars": {
+        "GOFLAGS": "-tags=linux"
+    }
+}
