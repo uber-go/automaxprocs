@@ -92,6 +92,7 @@ func Set(opts ...Option) (func(), error) {
 	cfg := &config{
 		procs:         iruntime.CPUQuotaToGOMAXPROCS,
 		minGOMAXPROCS: 1,
+		roundQuota:    iruntime.Floor,
 	}
 	for _, o := range opts {
 		o.apply(cfg)
