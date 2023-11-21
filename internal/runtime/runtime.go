@@ -31,3 +31,13 @@ const (
 	// CPUQuotaMinUsed is returned when CPU quota is smaller than the min value
 	CPUQuotaMinUsed
 )
+
+// Rounding controls how the CPU quota value should be rounded to an int
+type Rounding int
+
+const (
+	// Ceil is used to return a CPU quota rounded up
+	Ceil Rounding = iota
+	// Floor is used to return a CPU quota rounded down
+	Floor
+)
