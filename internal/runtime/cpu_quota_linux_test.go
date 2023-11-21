@@ -81,6 +81,36 @@ func TestNewQueryer(t *testing.T) {
 		_, err := newQueryer()
 		assert.ErrorIs(t, err, giveErr)
 	})
+
+	t.Run("round quota with ceil", func(t *testing.T) {
+		stubs := newStubs(t)
+
+		q := testQueryer{v: 2.7}
+		stubs.StubFunc(&_newCgroups2, q, nil)
+
+		got, _, err := CPUQuotaToGOMAXPROCS(0, Ceil)
+		require.NoError(t, err)
+		assert.Same(t, 3, got)
+	})
+
+	t.Run("round quota with floor", func(t *testing.T) {
+		stubs := newStubs(t)
+
+		q := testQueryer{v: 2.7}
+		stubs.StubFunc(&_newCgroups2, q, nil)
+
+		got, _, err := CPUQuotaToGOMAXPROCS(0, Floor)
+		require.NoError(t, err)
+		assert.Same(t, 2, got)
+	})
+}
+
+type testQueryer struct {
+	v float64
+}
+
+func (tq testQueryer) CPUQuota() (float64, bool, error) {
+	return tq.v, true, nil
 }
 
 func newStubs(t *testing.T) *gostub.Stubs {
