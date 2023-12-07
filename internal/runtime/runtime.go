@@ -20,6 +20,8 @@
 
 package runtime
 
+import "math"
+
 // CPUQuotaStatus presents the status of how CPU quota is used
 type CPUQuotaStatus int
 
@@ -32,12 +34,7 @@ const (
 	CPUQuotaMinUsed
 )
 
-// Rounding controls how the CPU quota value should be rounded to an int
-type Rounding int
-
-const (
-	// Ceil is used to return a CPU quota rounded up
-	Ceil Rounding = iota
-	// Floor is used to return a CPU quota rounded down
-	Floor
-)
+// DefaultRoundFunc is the default function to convert CPU quota from float to int. It rounds the value down (floor).
+func DefaultRoundFunc(v float64) int {
+	return int(math.Floor(v))
+}

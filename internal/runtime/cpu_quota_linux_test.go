@@ -26,6 +26,7 @@ package runtime
 import (
 	"errors"
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/prashantv/gostub"
@@ -86,22 +87,22 @@ func TestNewQueryer(t *testing.T) {
 		stubs := newStubs(t)
 
 		q := testQueryer{v: 2.7}
-		stubs.StubFunc(&_newCgroups2, q, nil)
+		stubs.StubFunc(&_newQueryer, q, nil)
 
-		got, _, err := CPUQuotaToGOMAXPROCS(0, Ceil)
+		got, _, err := CPUQuotaToGOMAXPROCS(0, func(v float64) int { return int(math.Ceil(v)) })
 		require.NoError(t, err)
-		assert.Same(t, 3, got)
+		assert.Equal(t, 3, got)
 	})
 
 	t.Run("round quota with floor", func(t *testing.T) {
 		stubs := newStubs(t)
 
 		q := testQueryer{v: 2.7}
-		stubs.StubFunc(&_newCgroups2, q, nil)
+		stubs.StubFunc(&_newQueryer, q, nil)
 
-		got, _, err := CPUQuotaToGOMAXPROCS(0, Floor)
+		got, _, err := CPUQuotaToGOMAXPROCS(0, func(v float64) int { return int(math.Floor(v)) })
 		require.NoError(t, err)
-		assert.Same(t, 2, got)
+		assert.Equal(t, 2, got)
 	})
 }
 

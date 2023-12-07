@@ -25,6 +25,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"strconv"
 	"testing"
@@ -55,7 +56,7 @@ func testLogger() (*bytes.Buffer, Option) {
 	return buf, Logger(printf)
 }
 
-func stubProcs(f func(int, iruntime.Rounding) (int, iruntime.CPUQuotaStatus, error)) Option {
+func stubProcs(f func(int, func(v float64) int) (int, iruntime.CPUQuotaStatus, error)) Option {
 	return optionFunc(func(cfg *config) {
 		cfg.procs = f
 	})
@@ -96,7 +97,7 @@ func TestSet(t *testing.T) {
 	})
 
 	t.Run("ErrorReadingQuota", func(t *testing.T) {
-		opt := stubProcs(func(int, iruntime.Rounding) (int, iruntime.CPUQuotaStatus, error) {
+		opt := stubProcs(func(int, func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
 			return 0, iruntime.CPUQuotaUndefined, errors.New("failed")
 		})
 		prev := currentMaxProcs()
@@ -109,7 +110,7 @@ func TestSet(t *testing.T) {
 
 	t.Run("QuotaUndefined", func(t *testing.T) {
 		buf, logOpt := testLogger()
-		quotaOpt := stubProcs(func(int, iruntime.Rounding) (int, iruntime.CPUQuotaStatus, error) {
+		quotaOpt := stubProcs(func(int, func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
 			return 0, iruntime.CPUQuotaUndefined, nil
 		})
 		prev := currentMaxProcs()
@@ -122,7 +123,7 @@ func TestSet(t *testing.T) {
 
 	t.Run("QuotaUndefined return maxProcs=7", func(t *testing.T) {
 		buf, logOpt := testLogger()
-		quotaOpt := stubProcs(func(int, iruntime.Rounding) (int, iruntime.CPUQuotaStatus, error) {
+		quotaOpt := stubProcs(func(int, func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
 			return 7, iruntime.CPUQuotaUndefined, nil
 		})
 		prev := currentMaxProcs()
@@ -135,7 +136,7 @@ func TestSet(t *testing.T) {
 
 	t.Run("QuotaTooSmall", func(t *testing.T) {
 		buf, logOpt := testLogger()
-		quotaOpt := stubProcs(func(min int, round iruntime.Rounding) (int, iruntime.CPUQuotaStatus, error) {
+		quotaOpt := stubProcs(func(min int, round func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
 			return min, iruntime.CPUQuotaMinUsed, nil
 		})
 		undo, err := Set(logOpt, quotaOpt, Min(5))
@@ -147,7 +148,7 @@ func TestSet(t *testing.T) {
 
 	t.Run("Min unused", func(t *testing.T) {
 		buf, logOpt := testLogger()
-		quotaOpt := stubProcs(func(min int, round iruntime.Rounding) (int, iruntime.CPUQuotaStatus, error) {
+		quotaOpt := stubProcs(func(min int, round func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
 			return min, iruntime.CPUQuotaMinUsed, nil
 		})
 		// Min(-1) should be ignored.
@@ -159,7 +160,7 @@ func TestSet(t *testing.T) {
 	})
 
 	t.Run("QuotaUsed", func(t *testing.T) {
-		opt := stubProcs(func(min int, round iruntime.Rounding) (int, iruntime.CPUQuotaStatus, error) {
+		opt := stubProcs(func(min int, round func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
 			assert.Equal(t, 1, min, "Default minimum value should be 1")
 			return 42, iruntime.CPUQuotaUsed, nil
 		})
@@ -170,22 +171,22 @@ func TestSet(t *testing.T) {
 	})
 
 	t.Run("RoundQuotaSetToCeil", func(t *testing.T) {
-		opt := stubProcs(func(min int, round iruntime.Rounding) (int, iruntime.CPUQuotaStatus, error) {
-			assert.Equal(t, iruntime.Ceil, round, "round should be Ceil")
+		opt := stubProcs(func(min int, round func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
+			assert.Equal(t, round(2.4), 3, "round should be math.Ceil")
 			return 43, iruntime.CPUQuotaUsed, nil
 		})
-		undo, err := Set(opt, RoundQuota(iruntime.Ceil))
+		undo, err := Set(opt, RoundQuotaFunc(func(v float64) int { return int(math.Ceil(v)) }))
 		defer undo()
 		require.NoError(t, err, "Set failed")
 		assert.Equal(t, 43, currentMaxProcs(), "should change GOMAXPROCS to match rounded up quota")
 	})
 
 	t.Run("RoundQuotaSetToFloor", func(t *testing.T) {
-		opt := stubProcs(func(min int, round iruntime.Rounding) (int, iruntime.CPUQuotaStatus, error) {
-			assert.Equal(t, iruntime.Floor, round, "round should be Floor")
+		opt := stubProcs(func(min int, round func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
+			assert.Equal(t, round(2.6), 2, "round should be math.Floor")
 			return 42, iruntime.CPUQuotaUsed, nil
 		})
-		undo, err := Set(opt, RoundQuota(iruntime.Floor))
+		undo, err := Set(opt, RoundQuotaFunc(func(v float64) int { return int(math.Floor(v)) }))
 		defer undo()
 		require.NoError(t, err, "Set failed")
 		assert.Equal(t, 42, currentMaxProcs(), "should change GOMAXPROCS to match rounded up quota")

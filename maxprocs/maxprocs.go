@@ -37,10 +37,10 @@ func currentMaxProcs() int {
 }
 
 type config struct {
-	printf        func(string, ...interface{})
-	procs         func(int, iruntime.Rounding) (int, iruntime.CPUQuotaStatus, error)
-	minGOMAXPROCS int
-	roundQuota    iruntime.Rounding
+	printf         func(string, ...interface{})
+	procs          func(int, func(v float64) int) (int, iruntime.CPUQuotaStatus, error)
+	minGOMAXPROCS  int
+	roundQuotaFunc func(v float64) int
 }
 
 func (c *config) log(fmt string, args ...interface{}) {
@@ -72,10 +72,10 @@ func Min(n int) Option {
 	})
 }
 
-// RoundQuota controls whether the CPU quota should be rounded using ceil or floor.
-func RoundQuota(v iruntime.Rounding) Option {
+// RoundQuotaFunc sets the function that will be used to covert the CPU quota from float to int.
+func RoundQuotaFunc(rf func(v float64) int) Option {
 	return optionFunc(func(cfg *config) {
-		cfg.roundQuota = v
+		cfg.roundQuotaFunc = rf
 	})
 }
 
@@ -90,9 +90,9 @@ func (of optionFunc) apply(cfg *config) { of(cfg) }
 // configured CPU quota.
 func Set(opts ...Option) (func(), error) {
 	cfg := &config{
-		procs:         iruntime.CPUQuotaToGOMAXPROCS,
-		minGOMAXPROCS: 1,
-		roundQuota:    iruntime.Floor,
+		procs:          iruntime.CPUQuotaToGOMAXPROCS,
+		roundQuotaFunc: iruntime.DefaultRoundFunc,
+		minGOMAXPROCS:  1,
 	}
 	for _, o := range opts {
 		o.apply(cfg)
@@ -111,7 +111,7 @@ func Set(opts ...Option) (func(), error) {
 		return undoNoop, nil
 	}
 
-	maxProcs, status, err := cfg.procs(cfg.minGOMAXPROCS, cfg.roundQuota)
+	maxProcs, status, err := cfg.procs(cfg.minGOMAXPROCS, cfg.roundQuotaFunc)
 	if err != nil {
 		return undoNoop, err
 	}
