@@ -83,6 +83,18 @@ func TestNewQueryer(t *testing.T) {
 		assert.ErrorIs(t, err, giveErr)
 	})
 
+	t.Run("round quota with a nil round function", func(t *testing.T) {
+		stubs := newStubs(t)
+
+		q := testQueryer{v: 2.7}
+		stubs.StubFunc(&_newQueryer, q, nil)
+
+		// If round function is nil, CPUQuotaToGOMAXPROCS uses DefaultRoundFunc, which rounds down the value
+		got, _, err := CPUQuotaToGOMAXPROCS(0, nil)
+		require.NoError(t, err)
+		assert.Equal(t, 2, got)
+	})
+
 	t.Run("round quota with ceil", func(t *testing.T) {
 		stubs := newStubs(t)
 
