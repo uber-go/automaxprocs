@@ -26,6 +26,7 @@ package runtime
 import (
 	"errors"
 	"fmt"
+	"math"
 	"testing"
 
 	"github.com/prashantv/gostub"
@@ -81,6 +82,48 @@ func TestNewQueryer(t *testing.T) {
 		_, err := newQueryer()
 		assert.ErrorIs(t, err, giveErr)
 	})
+
+	t.Run("round quota with a nil round function", func(t *testing.T) {
+		stubs := newStubs(t)
+
+		q := testQueryer{v: 2.7}
+		stubs.StubFunc(&_newQueryer, q, nil)
+
+		// If round function is nil, CPUQuotaToGOMAXPROCS uses DefaultRoundFunc, which rounds down the value
+		got, _, err := CPUQuotaToGOMAXPROCS(0, nil)
+		require.NoError(t, err)
+		assert.Equal(t, 2, got)
+	})
+
+	t.Run("round quota with ceil", func(t *testing.T) {
+		stubs := newStubs(t)
+
+		q := testQueryer{v: 2.7}
+		stubs.StubFunc(&_newQueryer, q, nil)
+
+		got, _, err := CPUQuotaToGOMAXPROCS(0, func(v float64) int { return int(math.Ceil(v)) })
+		require.NoError(t, err)
+		assert.Equal(t, 3, got)
+	})
+
+	t.Run("round quota with floor", func(t *testing.T) {
+		stubs := newStubs(t)
+
+		q := testQueryer{v: 2.7}
+		stubs.StubFunc(&_newQueryer, q, nil)
+
+		got, _, err := CPUQuotaToGOMAXPROCS(0, func(v float64) int { return int(math.Floor(v)) })
+		require.NoError(t, err)
+		assert.Equal(t, 2, got)
+	})
+}
+
+type testQueryer struct {
+	v float64
+}
+
+func (tq testQueryer) CPUQuota() (float64, bool, error) {
+	return tq.v, true, nil
 }
 
 func newStubs(t *testing.T) *gostub.Stubs {
