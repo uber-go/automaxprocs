@@ -35,6 +35,7 @@ const (
 	_mountInfoSep               = " "
 	_mountInfoOptsSep           = ","
 	_mountInfoOptionalFieldsSep = "-"
+	_miFieldIDMountPointSep     = "/"
 )
 
 const (
@@ -107,7 +108,11 @@ func NewMountPointFromLine(line string) (*MountPoint, error) {
 
 			miFieldIDFSType := _miFieldOffsetFSType + fsTypeStart
 			miFieldIDMountSource := _miFieldOffsetMountSource + fsTypeStart
-			miFieldIDSuperOptions := _miFieldOffsetSuperOptions + fsTypeStart
+			rootOpts := strings.Split(fields[_miFieldIDMountPoint], _miFieldIDMountPointSep)
+			if len(rootOpts) == 0 {
+				return nil, mountPointFormatInvalidError{line}
+			}
+			superOpts := strings.Split(rootOpts[len(rootOpts)-1], _mountInfoOptsSep)
 
 			return &MountPoint{
 				MountID:        mountID,
@@ -119,7 +124,7 @@ func NewMountPointFromLine(line string) (*MountPoint, error) {
 				OptionalFields: fields[_miFieldIDOptionalFields:(fsTypeStart - 1)],
 				FSType:         fields[miFieldIDFSType],
 				MountSource:    fields[miFieldIDMountSource],
-				SuperOptions:   strings.Split(fields[miFieldIDSuperOptions], _mountInfoOptsSep),
+				SuperOptions:   superOpts,
 			}, nil
 		}
 	}
@@ -135,6 +140,7 @@ func (mp *MountPoint) Translate(absPath string) (string, error) {
 	if err != nil {
 		return "", err
 	}
+
 	if relPath == ".." || strings.HasPrefix(relPath, "../") {
 		return "", pathNotExposedFromMountPointError{
 			mountPoint: mp.MountPoint,

@@ -6,3 +6,4 @@
 6 5 0:5 / /sys/fs/cgroup/cpuset rw,nosuid,nodev,noexec,relatime shared:6 - cgroup cgroup rw,cpuset
 7 5 0:6 /docker /sys/fs/cgroup/cpu,cpuacct rw,nosuid,nodev,noexec,relatime shared:7 - cgroup cgroup rw,cpu,cpuacct
 8 5 0:7 /docker /sys/fs/cgroup/memory rw,nosuid,nodev,noexec,relatime shared:8 - cgroup cgroup rw,memory
+9 5 0:8 /docker/memory.vmstat /sys/fs/cgroup/vmstat rw,nosuid,nodev,noexec,relatime shared:8 - cgroup cgroup rw,memory
