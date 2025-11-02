@@ -2,6 +2,8 @@
 
 Automatically set `GOMAXPROCS` to match Linux container CPU quota.
 
+While this package predates Go 1.25 [container-aware-gomaxprocs], we continue to use it in production. This is because, unlike the stdlib, this package rounds any fractional cores down. This is to reduce latency spikes at a cost of potentially wasted capacity. We use fractional cores (example 8.1) to constrain the Go runtime to 8 cores, while 0.1 is left for anything else running in the container.
+
 ## Installation
 
 `go get -u go.uber.org/automaxprocs`
@@ -67,5 +69,6 @@ Released under the [MIT License](LICENSE).
 [ci]: https://github.com/uber-go/automaxprocs/actions/workflows/go.yml
 [cov-img]: https://codecov.io/gh/uber-go/automaxprocs/branch/master/graph/badge.svg
 [cov]: https://codecov.io/gh/uber-go/automaxprocs
+[container-aware-gomaxprocs]: https://go.dev/doc/go1.25#container-aware-gomaxprocs
 
 
