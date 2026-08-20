@@ -72,7 +72,7 @@ func Min(n int) Option {
 	})
 }
 
-// RoundQuotaFunc sets the function that will be used to covert the CPU quota from float to int.
+// RoundQuotaFunc sets the function that will be used to convert the CPU quota from float to int.
 func RoundQuotaFunc(rf func(v float64) int) Option {
 	return optionFunc(func(cfg *config) {
 		cfg.roundQuotaFunc = rf
