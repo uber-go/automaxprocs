@@ -48,6 +48,17 @@ func withMax(t testing.TB, n int, f func()) {
 	require.NoError(t, os.Unsetenv(_maxProcsKey), "couldn't clear GOMAXPROCS")
 }
 
+func withBuffer(t testing.TB, val string, f func()) {
+	prevStr, ok := os.LookupEnv(_bufferKey)
+	require.NoError(t, os.Setenv(_bufferKey, val), "couldn't set AUTOMAXPROCSBUFFER")
+	f()
+	if ok {
+		require.NoError(t, os.Setenv(_bufferKey, prevStr), "couldn't restore original AUTOMAXPROCSBUFFER value")
+		return
+	}
+	require.NoError(t, os.Unsetenv(_bufferKey), "couldn't clear AUTOMAXPROCSBUFFER")
+}
+
 func testLogger() (*bytes.Buffer, Option) {
 	buf := bytes.NewBuffer(nil)
 	printf := func(template string, args ...interface{}) {
@@ -191,11 +202,155 @@ func TestSet(t *testing.T) {
 		require.NoError(t, err, "Set failed")
 		assert.Equal(t, 42, currentMaxProcs(), "should change GOMAXPROCS to match rounded up quota")
 	})
+
+	t.Run("BufferOption", func(t *testing.T) {
+		opt := stubProcs(func(min int, round func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
+			return 8, iruntime.CPUQuotaUsed, nil
+		})
+		undo, err := Set(opt, Buffer(2))
+		defer undo()
+		require.NoError(t, err, "Set failed")
+		assert.Equal(t, 6, currentMaxProcs(), "should subtract buffer from quota")
+	})
+
+	t.Run("BufferOptionFloorOfOne", func(t *testing.T) {
+		buf, logOpt := testLogger()
+		opt := stubProcs(func(min int, round func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
+			return 2, iruntime.CPUQuotaUsed, nil
+		})
+		undo, err := Set(logOpt, opt, Buffer(5))
+		defer undo()
+		require.NoError(t, err, "Set failed")
+		assert.Equal(t, 1, currentMaxProcs(), "should clamp to floor of 1")
+		assert.Contains(t, buf.String(), "using minimum allowed", "unexpected log output")
+	})
+
+	t.Run("BufferOptionExactFloor", func(t *testing.T) {
+		opt := stubProcs(func(min int, round func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
+			return 3, iruntime.CPUQuotaUsed, nil
+		})
+		undo, err := Set(opt, Buffer(2))
+		defer undo()
+		require.NoError(t, err, "Set failed")
+		assert.Equal(t, 1, currentMaxProcs(), "should equal floor of 1")
+	})
+
+	t.Run("BufferOptionWithMin", func(t *testing.T) {
+		buf, logOpt := testLogger()
+		opt := stubProcs(func(min int, round func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
+			return 8, iruntime.CPUQuotaUsed, nil
+		})
+		undo, err := Set(logOpt, opt, Min(4), Buffer(6))
+		defer undo()
+		require.NoError(t, err, "Set failed")
+		assert.Equal(t, 4, currentMaxProcs(), "should clamp to configured minimum")
+		assert.Contains(t, buf.String(), "using minimum allowed", "unexpected log output")
+	})
+
+	t.Run("BufferOptionIgnoredBelowZero", func(t *testing.T) {
+		opt := stubProcs(func(min int, round func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
+			return 8, iruntime.CPUQuotaUsed, nil
+		})
+		undo, err := Set(opt, Buffer(2), Buffer(-1))
+		defer undo()
+		require.NoError(t, err, "Set failed")
+		assert.Equal(t, 6, currentMaxProcs(), "should ignore negative buffer")
+	})
+
+	t.Run("BufferOptionZero", func(t *testing.T) {
+		opt := stubProcs(func(min int, round func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
+			return 8, iruntime.CPUQuotaUsed, nil
+		})
+		undo, err := Set(opt, Buffer(0))
+		defer undo()
+		require.NoError(t, err, "Set failed")
+		assert.Equal(t, 8, currentMaxProcs(), "zero buffer should not change GOMAXPROCS")
+	})
+
+	t.Run("BufferEnvVar", func(t *testing.T) {
+		opt := stubProcs(func(min int, round func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
+			return 8, iruntime.CPUQuotaUsed, nil
+		})
+		withBuffer(t, "3", func() {
+			undo, err := Set(opt)
+			defer undo()
+			require.NoError(t, err, "Set failed")
+			assert.Equal(t, 5, currentMaxProcs(), "should subtract buffer from environment")
+		})
+	})
+
+	t.Run("BufferEnvVarFloorOfOne", func(t *testing.T) {
+		buf, logOpt := testLogger()
+		opt := stubProcs(func(min int, round func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
+			return 2, iruntime.CPUQuotaUsed, nil
+		})
+		withBuffer(t, "10", func() {
+			undo, err := Set(logOpt, opt)
+			defer undo()
+			require.NoError(t, err, "Set failed")
+			assert.Equal(t, 1, currentMaxProcs(), "should clamp to floor of 1")
+			assert.Contains(t, buf.String(), "using minimum allowed", "unexpected log output")
+		})
+	})
+
+	t.Run("BufferEnvVarInvalid", func(t *testing.T) {
+		buf, logOpt := testLogger()
+		opt := stubProcs(func(min int, round func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
+			return 8, iruntime.CPUQuotaUsed, nil
+		})
+		withBuffer(t, "not-a-number", func() {
+			undo, err := Set(logOpt, opt)
+			defer undo()
+			require.NoError(t, err, "Set failed")
+			assert.Equal(t, 8, currentMaxProcs(), "invalid buffer should be ignored")
+			assert.Contains(t, buf.String(), "Ignoring invalid AUTOMAXPROCSBUFFER", "unexpected log output")
+		})
+	})
+
+	t.Run("BufferEnvVarNegative", func(t *testing.T) {
+		buf, logOpt := testLogger()
+		opt := stubProcs(func(min int, round func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
+			return 8, iruntime.CPUQuotaUsed, nil
+		})
+		withBuffer(t, "-3", func() {
+			undo, err := Set(logOpt, opt)
+			defer undo()
+			require.NoError(t, err, "Set failed")
+			assert.Equal(t, 8, currentMaxProcs(), "negative buffer should be ignored")
+			assert.Contains(t, buf.String(), "Ignoring invalid AUTOMAXPROCSBUFFER", "unexpected log output")
+		})
+	})
+
+	t.Run("BufferOptionOverridesEnvVar", func(t *testing.T) {
+		opt := stubProcs(func(min int, round func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
+			return 8, iruntime.CPUQuotaUsed, nil
+		})
+		withBuffer(t, "2", func() {
+			undo, err := Set(opt, Buffer(5))
+			defer undo()
+			require.NoError(t, err, "Set failed")
+			assert.Equal(t, 3, currentMaxProcs(), "option should override environment variable")
+		})
+	})
+
+	t.Run("BufferUndefinedQuota", func(t *testing.T) {
+		opt := stubProcs(func(min int, round func(v float64) int) (int, iruntime.CPUQuotaStatus, error) {
+			return 0, iruntime.CPUQuotaUndefined, nil
+		})
+		prev := currentMaxProcs()
+		undo, err := Set(opt, Buffer(2))
+		defer undo()
+		require.NoError(t, err, "Set failed")
+		assert.Equal(t, prev, currentMaxProcs(), "should not alter GOMAXPROCS when quota undefined")
+	})
 }
 
 func TestMain(m *testing.M) {
 	if err := os.Unsetenv(_maxProcsKey); err != nil {
 		log.Fatalf("Couldn't clear %s: %v\n", _maxProcsKey, err)
+	}
+	if err := os.Unsetenv(_bufferKey); err != nil {
+		log.Fatalf("Couldn't clear %s: %v\n", _bufferKey, err)
 	}
 	os.Exit(m.Run())
 }

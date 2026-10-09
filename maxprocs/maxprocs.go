@@ -24,13 +24,19 @@
 package maxprocs // import "go.uber.org/automaxprocs/maxprocs"
 
 import (
+	"fmt"
 	"os"
 	"runtime"
+	"strconv"
+	"strings"
 
 	iruntime "go.uber.org/automaxprocs/internal/runtime"
 )
 
-const _maxProcsKey = "GOMAXPROCS"
+const (
+	_maxProcsKey = "GOMAXPROCS"
+	_bufferKey   = "AUTOMAXPROCSBUFFER"
+)
 
 func currentMaxProcs() int {
 	return runtime.GOMAXPROCS(0)
@@ -41,6 +47,7 @@ type config struct {
 	procs          func(int, func(v float64) int) (int, iruntime.CPUQuotaStatus, error)
 	minGOMAXPROCS  int
 	roundQuotaFunc func(v float64) int
+	buffer         int
 }
 
 func (c *config) log(fmt string, args ...interface{}) {
@@ -79,6 +86,16 @@ func RoundQuotaFunc(rf func(v float64) int) Option {
 	})
 }
 
+// Buffer sets the buffer headroom to subtract from the observed CPU quota before
+// setting GOMAXPROCS. Any value below 0 is ignored.
+func Buffer(n int) Option {
+	return optionFunc(func(cfg *config) {
+		if n >= 0 {
+			cfg.buffer = n
+		}
+	})
+}
+
 type optionFunc func(*config)
 
 func (of optionFunc) apply(cfg *config) { of(cfg) }
@@ -94,8 +111,23 @@ func Set(opts ...Option) (func(), error) {
 		roundQuotaFunc: iruntime.DefaultRoundFunc,
 		minGOMAXPROCS:  1,
 	}
+
+	var envWarn string
+	if bStr, exists := os.LookupEnv(_bufferKey); exists {
+		b, err := strconv.Atoi(strings.TrimSpace(bStr))
+		if err != nil || b < 0 {
+			envWarn = fmt.Sprintf("maxprocs: Ignoring invalid %s=%q", _bufferKey, bStr)
+		} else {
+			cfg.buffer = b
+		}
+	}
+
 	for _, o := range opts {
 		o.apply(cfg)
+	}
+
+	if envWarn != "" {
+		cfg.log("%s", envWarn)
 	}
 
 	undoNoop := func() {
@@ -119,6 +151,18 @@ func Set(opts ...Option) (func(), error) {
 	if status == iruntime.CPUQuotaUndefined {
 		cfg.log("maxprocs: Leaving GOMAXPROCS=%v: CPU quota undefined", currentMaxProcs())
 		return undoNoop, nil
+	}
+
+	if cfg.buffer > 0 {
+		maxProcs -= cfg.buffer
+		min := cfg.minGOMAXPROCS
+		if min < 1 {
+			min = 1
+		}
+		if maxProcs < min {
+			maxProcs = min
+			status = iruntime.CPUQuotaMinUsed
+		}
 	}
 
 	prev := currentMaxProcs()
