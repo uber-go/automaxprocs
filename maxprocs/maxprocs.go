@@ -37,10 +37,11 @@ func currentMaxProcs() int {
 }
 
 type config struct {
-	printf         func(string, ...interface{})
-	procs          func(int, func(v float64) int) (int, iruntime.CPUQuotaStatus, error)
-	minGOMAXPROCS  int
-	roundQuotaFunc func(v float64) int
+	printf           func(string, ...interface{})
+	structuredLogger FieldLogger
+	procs            func(int, func(v float64) int) (int, iruntime.CPUQuotaStatus, error)
+	minGOMAXPROCS    int
+	roundQuotaFunc   func(v float64) int
 }
 
 func (c *config) log(fmt string, args ...interface{}) {
@@ -49,9 +50,41 @@ func (c *config) log(fmt string, args ...interface{}) {
 	}
 }
 
+func (c *config) logInfo(msg string, fields map[string]interface{}) {
+	if c.structuredLogger != nil {
+		c.structuredLogger.Info(msg, fields)
+	}
+}
+
+func (c *config) logError(msg string, fields map[string]interface{}) {
+	if c.structuredLogger != nil {
+		c.structuredLogger.Error(msg, fields)
+	}
+}
+
 // An Option alters the behavior of Set.
 type Option interface {
 	apply(*config)
+}
+
+// FieldLogger is an interface for structured logging with key-value fields.
+type FieldLogger interface {
+	Info(msg string, fields map[string]interface{})
+	Error(msg string, fields map[string]interface{})
+}
+
+// StructuredLogFunc adapts a function with signature func(msg string, fields map[string]interface{})
+// to implement FieldLogger, sending both Info and Error logs to the function.
+type StructuredLogFunc func(msg string, fields map[string]interface{})
+
+// Info logs an informational message with fields.
+func (f StructuredLogFunc) Info(msg string, fields map[string]interface{}) {
+	f(msg, fields)
+}
+
+// Error logs an error message with fields.
+func (f StructuredLogFunc) Error(msg string, fields map[string]interface{}) {
+	f(msg, fields)
 }
 
 // Logger uses the supplied printf implementation for log output. By default,
@@ -59,6 +92,14 @@ type Option interface {
 func Logger(printf func(string, ...interface{})) Option {
 	return optionFunc(func(cfg *config) {
 		cfg.printf = printf
+	})
+}
+
+// StructuredLogger uses the supplied FieldLogger implementation for structured log output.
+// By default, Set doesn't log anything.
+func StructuredLogger(logger FieldLogger) Option {
+	return optionFunc(func(cfg *config) {
+		cfg.structuredLogger = logger
 	})
 }
 
@@ -100,6 +141,7 @@ func Set(opts ...Option) (func(), error) {
 
 	undoNoop := func() {
 		cfg.log("maxprocs: No GOMAXPROCS change to reset")
+		cfg.logInfo("maxprocs: No GOMAXPROCS change to reset", map[string]interface{}{})
 	}
 
 	// Honor the GOMAXPROCS environment variable if present. Otherwise, amend
@@ -108,30 +150,55 @@ func Set(opts ...Option) (func(), error) {
 	// can be overridden using `maxprocs.Min()`.
 	if max, exists := os.LookupEnv(_maxProcsKey); exists {
 		cfg.log("maxprocs: Honoring GOMAXPROCS=%q as set in environment", max)
+		cfg.logInfo("maxprocs: Honoring GOMAXPROCS as set in environment", map[string]interface{}{
+			"gomaxprocs": max,
+			"source":     "environment",
+		})
 		return undoNoop, nil
 	}
 
 	maxProcs, status, err := cfg.procs(cfg.minGOMAXPROCS, cfg.roundQuotaFunc)
 	if err != nil {
+		cfg.logError("maxprocs: Failed to check CPU quota", map[string]interface{}{
+			"error": err,
+		})
 		return undoNoop, err
 	}
 
 	if status == iruntime.CPUQuotaUndefined {
-		cfg.log("maxprocs: Leaving GOMAXPROCS=%v: CPU quota undefined", currentMaxProcs())
+		current := currentMaxProcs()
+		cfg.log("maxprocs: Leaving GOMAXPROCS=%v: CPU quota undefined", current)
+		cfg.logInfo("maxprocs: Leaving GOMAXPROCS unchanged: CPU quota undefined", map[string]interface{}{
+			"gomaxprocs": current,
+			"reason":     "CPU quota undefined",
+		})
 		return undoNoop, nil
 	}
 
 	prev := currentMaxProcs()
 	undo := func() {
 		cfg.log("maxprocs: Resetting GOMAXPROCS to %v", prev)
+		cfg.logInfo("maxprocs: Resetting GOMAXPROCS", map[string]interface{}{
+			"gomaxprocs": prev,
+		})
 		runtime.GOMAXPROCS(prev)
 	}
 
 	switch status {
 	case iruntime.CPUQuotaMinUsed:
-		cfg.log("maxprocs: Updating GOMAXPROCS=%v: using minimum allowed GOMAXPROCS", maxProcs)
+		cfg.log("maxprocs: Updating GOMAXPROCS=%v (was %v): using minimum allowed GOMAXPROCS", maxProcs, prev)
+		cfg.logInfo("maxprocs: Updating GOMAXPROCS: using minimum allowed GOMAXPROCS", map[string]interface{}{
+			"gomaxprocs": maxProcs,
+			"previous":   prev,
+			"reason":     "using minimum allowed GOMAXPROCS",
+		})
 	case iruntime.CPUQuotaUsed:
-		cfg.log("maxprocs: Updating GOMAXPROCS=%v: determined from CPU quota", maxProcs)
+		cfg.log("maxprocs: Updating GOMAXPROCS=%v (was %v): determined from CPU quota", maxProcs, prev)
+		cfg.logInfo("maxprocs: Updating GOMAXPROCS: determined from CPU quota", map[string]interface{}{
+			"gomaxprocs": maxProcs,
+			"previous":   prev,
+			"reason":     "determined from CPU quota",
+		})
 	}
 
 	runtime.GOMAXPROCS(maxProcs)
